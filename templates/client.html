@@ -1,72 +1,64 @@
 <!DOCTYPE html><html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>{{ client.name }} - My Progress</title>
+<title>{{ client.name }} - My Transformation</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-*{box-sizing:border-box}body{background:#0f0f1e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding-bottom:40px}
+*{box-sizing:border-box}body{background:#0f0f1e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding-bottom:80px}
 .gold{color:#c98a3a}.card{background:#1a1a2e;border:none;border-radius:16px;margin-bottom:10px}
-.st{background:#252540;border-radius:10px;padding:8px;text-align:center;flex:1;min-width:60px}
-.st-lbl{font-size:9px;color:#8a8a9a;text-transform:uppercase}
-.st-val{font-size:14px;font-weight:700;color:#f0d07a}
-.title-sm{font-size:13px;color:#c98a3a;font-weight:600;margin-bottom:8px}
-.tab{display:flex;background:#1a1a2e;border-radius:12px;padding:4px;margin-bottom:10px}
-.tab button{flex:1;padding:8px 4px;border:none;background:transparent;color:#8a8a9a;font-size:12px;border-radius:10px;cursor:pointer}
-.tab button.act{background:#c98a3a;color:#fff}
+.st{background:#252540;border-radius:10px;padding:6px;text-align:center;flex:1;min-width:50px}
+.st-lbl{font-size:8px;color:#8a8a9a;text-transform:uppercase}
+.st-val{font-size:13px;font-weight:700;color:#f0d07a}
+.title-sm{font-size:12px;color:#c98a3a;font-weight:600;margin-bottom:6px}
+.s-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #252540;cursor:pointer;text-decoration:none;color:#fff}
+.s-row:last-child{border:none}
+.s-row:hover{background:#25254033;margin:-8px;padding:8px;border-radius:10px}
+.s-date{min-width:80px;font-size:11px;color:#8a8a9a}
+.s-weight{min-width:55px;font-weight:700;font-size:14px}
+.s-change{min-width:55px;font-size:12px;text-align:right}
 .photo-g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .photo-g img{width:100%;border-radius:10px;cursor:pointer}
-.stats-r{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #252540;font-size:12px}
-.chart-btn{font-size:11px;padding:4px 8px;border:1px solid #333;background:transparent;color:#ccc;border-radius:8px;cursor:pointer;white-space:nowrap}
-.chart-btn.act{background:#c98a3a;color:#fff;border-color:#c98a3a}
 @media(min-width:768px){.container{max-width:600px;margin:0 auto;padding:16px}}
 @media(min-width:1024px){.container{max-width:800px;margin:0 auto;padding:24px}}
 </style></head>
 <body>
 <div class="container">
+
+<!-- Header -->
 <div class="d-flex justify-content-between align-items-center mb-2">
 <div><h4 class="gold mb-0" style="font-size:20px">🏋️ My Transformation Journey</h4><small class="text-secondary">{{ client.name }}</small></div>
 <a href="{{ url_for('logout') }}" class="text-secondary small text-decoration-none">Logout</a>
 </div>
 
-<!-- Motivational Quote -->
-<div id="quote-box" class="card p-3 text-center" style="border-left:3px solid #c98a3a">
-<div id="quote-text" class="gold" style="font-style:italic;font-size:14px;line-height:1.4"></div>
-<small id="quote-author" class="text-secondary" style="font-size:10px;margin-top:4px;display:block"></small>
+<!-- Quote -->
+<div id="quote-box" class="card p-2 text-center" style="border-left:3px solid #c98a3a">
+<div id="quote-text" class="gold" style="font-style:italic;font-size:13px;line-height:1.3"></div>
+<small id="quote-author" class="text-secondary" style="font-size:9px"></small>
 </div>
 
 <script>
 var quotes=[
   {t:'"The journey of a thousand miles begins with a single step."',a:'- Lao Tzu'},
-  {t:'"The best time to plant a tree was 20 years ago. The second best time is now."',a:'- Chinese Proverb'},
   {t:'"Small daily improvements over time lead to stunning results."',a:'- Unknown'},
   {t:'"Your body hears everything your mind says. Stay positive."',a:'- Unknown'},
-  {t:'"The only bad workout is the one that didn\'t happen."',a:'- Unknown'},
-  {t:'"Success is the sum of small efforts repeated day in and day out."',a:'- Robert Collier'},
   {t:'"Strive for progress, not perfection."',a:'- Unknown'},
-  {t:'"It does not matter how slowly you go, as long as you do not stop."',a:'- Confucius'},
-  {t:'"Take care of your body. It\'s the only place you have to live."',a:'- Jim Rohn'},
+  {t:'"Take care of your body. It\\'s the only place you have to live."',a:'- Jim Rohn'},
   {t:'"The secret of getting ahead is getting started."',a:'- Mark Twain'},
   {t:'"Your health is an investment, not an expense."',a:'- Unknown'},
-  {t:'"Don\'t watch the clock; do what it does. Keep going."',a:'- Sam Levenson'},
-  {t:'"The body achieves what the mind believes."',a:'- Napoleon Hill'},
-  {t:'"Strength does not come from the body. It comes from the will."',a:'- Unknown'},
-  {t:'"A year from now you will wish you started today."',a:'- Karen Lamb'}
+  {t:'"The body achieves what the mind believes."',a:'- Napoleon Hill'}
 ];
 var q=quotes[Math.floor(Math.random()*quotes.length)];
 document.getElementById('quote-text').textContent=q.t;
 document.getElementById('quote-author').textContent=q.a;
-setTimeout(function(){document.getElementById('quote-box').style.transition='opacity 1s';document.getElementById('quote-box').style.opacity='0.25'},8000);
+setTimeout(function(){document.getElementById('quote-box').style.opacity='0.3'},10000);
 </script>
 
 {% set s = sessions[0] if sessions else None %}
 {% set s_prev = sessions[1] if sessions|length > 1 else None %}
 
 {% if s %}
-{% set bmi = (s.weight / ((client.height/100)**2))|round(1) if s.weight else 0 %}
-{% set bf_kg = (s.weight * s.body_fat / 100)|round(1) if (s.weight and s.body_fat) else 0 %}
-{% set muscle_kg = (s.weight * s.muscle_mass / 100)|round(1) if (s.weight and s.muscle_mass) else 0 %}
-{% set bio_age = client.birthday|calc_bio_age %}
 
+<!-- Traffic Light -->
 {% set trends = [] %}
 {% if s_prev %}
 {% if s.weight and s_prev.weight and s.weight < s_prev.weight %}{% set _ = trends.append(1) %}
@@ -78,82 +70,62 @@ setTimeout(function(){document.getElementById('quote-box').style.transition='opa
 {% endif %}
 {% set good = trends|select('equalto',1)|list|length %}
 {% set bad = trends|select('equalto',0)|list|length %}
-{% if good > bad %}{% set tl_c = '#4ec97e' %}{% set tl_i = '🟢' %}{% set tl_t = 'Great Progress!' %}
-{% elif bad > good %}{% set tl_c = '#ff6b6b' %}{% set tl_i = '🔴' %}{% set tl_t = 'Needs Attention' %}
-{% elif trends|length > 0 %}{% set tl_c = '#f0d07a' %}{% set tl_i = '🟡' %}{% set tl_t = 'Stable' %}
-{% else %}{% set tl_c = '#8a8a9a' %}{% set tl_i = '⚪' %}{% set tl_t = 'Start Tracking' %}{% endif %}
+{% if good > bad %}{% set tl_c='#4ec97e' %}{% set tl_i='🟢' %}{% set tl_t='Great Progress!' %}
+{% elif bad > good %}{% set tl_c='#ff6b6b' %}{% set tl_i='🔴' %}{% set tl_t='Needs Attention' %}
+{% elif trends|length > 0 %}{% set tl_c='#f0d07a' %}{% set tl_i='🟡' %}{% set tl_t='Stable' %}
+{% else %}{% set tl_c='#8a8a9a' %}{% set tl_i='⚪' %}{% set tl_t='Getting Started' %}{% endif %}
 
-<div class="card p-3 text-center" style="border:2px solid {{ tl_c }}">
-<div style="font-size:36px">{{ tl_i }}</div>
-<div style="font-size:18px;font-weight:700;color:{{ tl_c }}">{{ tl_t }}</div>
-<small class="text-secondary">Last: {{ s.date|fmt_date }}</small>
+<div class="card p-2 text-center" style="border:2px solid {{ tl_c }}">
+<div style="font-size:28px">{{ tl_i }}</div>
+<div style="font-size:15px;font-weight:700;color:{{ tl_c }}">{{ tl_t }}</div>
+<small class="text-secondary">Latest: {{ s.date|fmt_date }} · {{ s.weight }}kg</small>
 </div>
 
+<!-- Goal bar -->
 {% if client.goal_weight %}
-<div class="card p-3">
+<div class="card p-2">
 <div class="d-flex justify-content-between">
-<div><small class="st-lbl">🎯 Goal</small><div class="fw-bold gold" style="font-size:18px">{{ client.goal_weight }}kg</div></div>
-<div class="text-end"><small class="st-lbl">Current</small><div class="fw-bold" style="font-size:18px;color:{% if s.weight <= client.goal_weight %}#4ec97e{% else %}#f0d07a{% endif %}">{{ s.weight }}kg</div></div>
+<div><small class="st-lbl">🎯 Goal: {{ client.goal_weight }}kg</small></div>
+<div><small class="st-lbl">Current: <span style="color:{% if s.weight <= client.goal_weight %}#4ec97e{% else %}#f0d07a{% endif %}">{{ s.weight }}kg</span></small></div>
 </div>
 {% set pct = ((client.goal_weight / s.weight) * 100)|round(1) if s.weight else 0 %}
-<div style="height:6px;background:#252540;border-radius:3px;margin-top:8px;overflow:hidden">
+<div style="height:5px;background:#252540;border-radius:3px;margin-top:4px;overflow:hidden">
 <div style="height:100%;background:#c98a3a;border-radius:3px;width:{{ pct if pct <= 100 else 100 }}%"></div>
 </div>
 </div>
 {% endif %}
 
-<div class="card p-3">
-<div class="title-sm">Latest — {{ s.date|fmt_date }}</div>
-<div class="d-flex flex-wrap gap-1 mb-1">
+<!-- Latest Stats Bar -->
+<div class="d-flex gap-1 mb-1">
 <div class="st"><div class="st-lbl">Weight</div><div class="st-val">{{ s.weight }}kg</div></div>
 <div class="st"><div class="st-lbl">BF %</div><div class="st-val">{{ s.body_fat }}%</div></div>
-<div class="st"><div class="st-lbl">BF kg</div><div class="st-val">{{ bf_kg }}kg</div></div>
-<div class="st"><div class="st-lbl">BMI</div><div class="st-val">{{ bmi }}</div></div>
+<div class="st"><div class="st-lbl">BF kg</div><div class="st-val">{{ (s.weight * s.body_fat / 100)|round(1) if (s.weight and s.body_fat) else '-' }}</div></div>
+<div class="st"><div class="st-lbl">BMI</div><div class="st-val">{{ (s.weight / ((client.height/100)**2))|round(1) if s.weight else '-' }}</div></div>
 </div>
-<div class="d-flex flex-wrap gap-1 mb-1">
-<div class="st"><div class="st-lbl">Visceral</div><div class="st-val">{{ s.visceral_fat }}</div></div>
-<div class="st"><div class="st-lbl">Muscle</div><div class="st-val">{{ muscle_kg }}kg</div></div>
-<div class="st"><div class="st-lbl">BMR</div><div class="st-val">{{ s.bmr }}</div></div>
-<div class="st"><div class="st-lbl">Body Age</div><div class="st-val" style="color:{% if s.body_age and s.body_age > bio_age %}#ff6b6b{% elif s.body_age and s.body_age < bio_age %}#4ec97e{% else %}#f0d07a{% endif %}">{{ s.body_age or '-' }}</div></div>
-</div>
-<div class="d-flex flex-wrap gap-1">
-<div class="st"><div class="st-lbl">Waist</div><div class="st-val">{{ s.waist }}cm</div></div>
-<div class="st"><div class="st-lbl">Abdomen</div><div class="st-val">{{ s.abdomen }}cm</div></div>
-<div class="st"><div class="st-lbl">Hip</div><div class="st-val">{{ s.hip }}cm</div></div>
-<div class="st"><div class="st-lbl">Thigh</div><div class="st-val">{{ s.thigh }}cm</div></div>
-</div>
-{% if s.body_age %}
-<small class="text-secondary">Biological Age: {{ bio_age }}yr · {% if s.body_age < bio_age %}🟢 {{ bio_age - s.body_age }}yr younger!{% elif s.body_age > bio_age %}🔴 {{ s.body_age - bio_age }}yr older{% else %}✅ On track{% endif %}</small>
-{% endif %}
+<div class="d-flex gap-1 mb-2">
+<div class="st"><div class="st-lbl">Waist</div><div class="st-val">{{ s.waist or '-' }}cm</div></div>
+<div class="st"><div class="st-lbl">Hip</div><div class="st-val">{{ s.hip or '-' }}cm</div></div>
+<div class="st"><div class="st-lbl">Visceral</div><div class="st-val">{{ s.visceral_fat or '-' }}</div></div>
+<div class="st"><div class="st-lbl">Muscle</div><div class="st-val">{{ s.muscle_mass or '-' }}%</div></div>
 </div>
 
-{% if s_prev %}
-<div class="card p-3">
-<div class="title-sm">↔️ Last Comparison</div>
-<div class="d-flex flex-wrap gap-1">
-{% for label, vo, vn in [('Weight',s_prev.weight,s.weight),('BF %',s_prev.body_fat,s.body_fat),('Waist',s_prev.waist,s.waist),('Hip',s_prev.hip,s.hip)] %}
-{% if vo and vn %}{% set diff = (vn - vo)|round(1) %}
-<div class="st" style="min-width:75px">
-<div class="st-lbl">{{ label }}</div>
-<div class="text-secondary" style="font-size:10px">{{ vo }} →</div>
-<div style="font-weight:700;font-size:13px;color:{% if diff < 0 and label != 'Muscle' %}#4ec97e{% elif diff > 0 and label != 'Muscle' %}#ff6b6b{% else %}#f0d07a{% endif %}">{{ vn }}{% if diff != 0 %} ({{ '+' if diff > 0 }}{{ diff }}){% endif %}</div>
-</div>{% endif %}{% endfor %}
-</div>
-</div>
-{% endif %}
-
-<!-- All Sessions Quick View -->
-<div class="card p-3">
+<!-- Session List like Coach View -->
+<div class="card p-2">
 <div class="title-sm">📋 All Sessions ({{ sessions|length }})</div>
 {% for se in sessions %}
-{% set diff_w = 0 if loop.last or not loop.first else ((sessions[loop.index0-1].weight or 0) - (se.weight or 0))|round(1) %}
-<div class="d-flex justify-content-between align-items-center" style="padding:5px 0;border-bottom:1px solid #252540">
-<div><span class="text-secondary" style="font-size:11px">{{ se.date|fmt_date }}</span></div>
-<div><span class="fw-bold" style="font-size:13px">{{ se.weight }}kg</span>
-{% if se.body_fat %}<span class="text-secondary" style="font-size:10px"> · F:{{ se.body_fat }}%</span>{% endif %}
-{% if se.waist %}<span class="text-secondary" style="font-size:10px"> · W:{{ se.waist }}cm</span>{% endif %}
-</div>
-</div>
+<a class="s-row" href="#session-{{ se.id }}">
+{% set prev_se = sessions[loop.index] if not loop.last else None %}
+<span class="s-date">{{ se.date[:10] }}</span>
+<span class="s-weight">{{ se.weight }}kg</span>
+{% if se.body_fat %}<span style="font-size:10px;color:#8a8a9a;flex:1">F:{{ se.body_fat }}%</span>{% else %}<span style="flex:1"></span>{% endif %}
+{% if prev_se and prev_se.weight %}
+{% set diff = (se.weight - prev_se.weight)|round(1) %}
+<span class="s-change" style="color:{% if diff < 0 %}#4ec97e{% elif diff > 0 %}#ff6b6b{% else %}#f0d07a{% endif %}">
+{% if diff < 0 %}🟢{% elif diff > 0 %}🔴{% else %}➡️{% endif %}
+{% if diff > 0 %}+{% endif %}{{ diff }}kg
+</span>
+{% endif %}
+</a>
 {% endfor %}
 </div>
 
@@ -161,193 +133,126 @@ setTimeout(function(){document.getElementById('quote-box').style.transition='opa
 <div class="card p-4 text-center"><p class="text-secondary mb-0">No measurements yet. Check back after your next session!</p></div>
 {% endif %}
 
-<div class="tab" id="main-tabs">
-<button class="act" data-tab="chart">📈 Progress</button>
-<button data-tab="compare">🔍 Compare</button>
-<button data-tab="photos">📸 Photos</button>
-<button data-tab="history">📋 History</button>
+<!-- Tabs -->
+<div class="card p-2">
+<div class="d-flex gap-2" id="main-tabs">
+<button class="btn btn-sm gold-bg" data-tab="chart">📈 Progress</button>
+<button class="btn btn-sm btn-outline-secondary text-white" data-tab="compare">🔍 Compare</button>
+<button class="btn btn-sm btn-outline-secondary text-white" data-tab="photos">📸 Photos</button>
+</div>
 </div>
 
 <div id="tab-chart">
-<div class="card p-3">
-<div class="d-flex gap-1 mb-2" style="overflow-x:auto;white-space:nowrap;padding-bottom:4px">
-<button class="chart-btn act" onclick="csw('weight')" id="csw">⚖️ Weight</button>
-<button class="chart-btn" onclick="csw('fat')" id="csf">💪 Fat %</button>
-<button class="chart-btn" onclick="csw('size')" id="css">📏 Waist & Hip</button>
-<button class="chart-btn" onclick="csw('visceral')" id="csv">🔥 Visceral</button>
-<button class="chart-btn" onclick="csw('muscle')" id="csm">💪 Muscle</button>
-<button class="chart-btn" onclick="csw('age')" id="csa">🧬 Body Age</button>
-<button class="chart-btn" onclick="csw('all')" id="csall">📊 All</button>
-</div>
-<div style="position:relative;height:260px"><canvas id="pChart"></canvas></div>
-<div class="mt-2 small text-secondary text-center" id="chart-hint">⬆️ Tap buttons to switch view</div>
+<div class="card p-2">
+<div style="height:220px"><canvas id="pChart"></canvas></div>
 </div>
 </div>
 
 <div id="tab-compare" style="display:none">
-<div class="card p-3">
-<div class="title-sm">🔍 Compare Any 2 Sessions</div>
-<div class="row g-2 mb-2">
-<div class="col-6">
-<select class="form-select" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;font-size:13px" id="cmp1" onchange="doCompare()">
-<option value="">Select date 1</option>
-{% for s in sessions %}<option value="{{ s.id }}">{{ s.date|fmt_date }}</option>{% endfor %}
-</select>
+<div class="card p-2">
+<div class="title-sm">🔍 Pick 2 Dates to Compare</div>
+<div class="row g-1">
+<div class="col-6"><select id="cmp1" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;font-size:12px;width:100%" onchange="doCompare()">
+<option value="">Date 1</option>
+{% for s in sessions %}<option value="{{ s.id }}">{{ s.date[:10] }} - {{ s.weight }}kg</option>{% endfor %}
+</select></div>
+<div class="col-6"><select id="cmp2" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;font-size:12px;width:100%" onchange="doCompare()">
+<option value="">Date 2</option>
+{% for s in sessions %}<option value="{{ s.id }}">{{ s.date[:10] }} - {{ s.weight }}kg</option>{% endfor %}
+</select></div>
 </div>
-<div class="col-6">
-<select class="form-select" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;font-size:13px" id="cmp2" onchange="doCompare()">
-<option value="">Select date 2</option>
-{% for s in sessions %}<option value="{{ s.id }}">{{ s.date|fmt_date }}</option>{% endfor %}
-</select>
-</div>
-</div>
-<div id="cmp-result"></div>
+<div id="cmp-result" class="mt-1"></div>
 </div>
 </div>
 
 <div id="tab-photos" style="display:none">
-{% if photos %}
-<div class="title-sm">📸 Progress Photos</div>
-<div class="photo-g">
-{% for p in photos %}
-<div><img src="{{ url_for('uploaded_file',filename=p.filename) }}" onclick="window.open(this.src)">
-<div class="text-center text-secondary" style="font-size:10px">{{ p.date|fmt_date }} · {{ p.angle }}</div></div>
+<div class="card p-2">
+{% if photos %}<div class="photo-g">
+{% for p in photos %}<div><img src="{{ url_for('uploaded_file',filename=p.filename) }}"><div class="text-center text-secondary" style="font-size:9px">{{ p.date[:10] }} · {{ p.angle }}</div></div>
 {% endfor %}
+</div>{% else %}<p class="text-secondary mb-0 text-center">No photos yet</p>{% endif %}
 </div>
-{% else %}<div class="card p-4 text-center"><p class="text-secondary mb-0">No photos yet.</p></div>{% endif %}
 </div>
 
-<div id="tab-history" style="display:none">
-{% for s in sessions %}
-{% if not loop.last %}
-{% set prev = sessions[loop.index] %}
-{% set w_diff = (s.weight - prev.weight)|round(1) if (s.weight and prev.weight) else 0 %}
-{% set f_diff = (s.body_fat - prev.body_fat)|round(1) if (s.body_fat and prev.body_fat) else 0 %}
-{% set ws_diff = (s.waist - prev.waist)|round(1) if (s.waist and prev.waist) else 0 %}
-{% else %}
-{% set w_diff = 0 %}{% set f_diff = 0 %}{% set ws_diff = 0 %}
-{% endif %}
-<div class="stats-r">
-<span class="text-secondary" style="min-width:70px">{{ s.date|fmt_date }}</span>
-<span class="gold fw-bold" style="min-width:50px">{{ s.weight }}kg</span>
-<span class="text-secondary flex-fill">{% if s.body_fat %}F:{{ s.body_fat }}%{% endif %}{% if s.waist %} · W:{{ s.waist }}{% endif %}</span>
-{% if not loop.last %}
-<span style="font-size:11px;color:{% if w_diff < 0 %}#4ec97e{% elif w_diff > 0 %}#ff6b6b{% else %}#f0d07a{% endif %};min-width:55px;text-align:right">
-{% if w_diff < 0 %}🟢{% elif w_diff > 0 %}🔴{% else %}➡️{% endif %}
-{% if w_diff > 0 %}+{% endif %}{{ w_diff }}kg
-</span>
-{% endif %}
-</div>
-{% endfor %}
-{% if not sessions %}<div class="card p-4 text-center"><p class="text-secondary mb-0">No history yet.</p></div>{% endif %}
-</div>
-</div>
+</div><!-- container -->
 
 <script>
-let sessionsJson = {{ sessions_json | safe }}
-let pChart=null;
-let chartData={{ chart_json }};
-let hint=document.getElementById('chart-hint');
+let sessionsJson = {{ sessions_json }};
+let chartData = {{ chart_json }};
+let pChart = null;
+let hint = document.getElementById('chart-hint');
 
+// Tab switching
+document.getElementById('main-tabs').addEventListener('click', function(e){
+  var btn = e.target.closest('button');
+  if(!btn) return;
+  var t = btn.getAttribute('data-tab');
+  document.querySelectorAll('#main-tabs button').forEach(function(b){b.className='btn btn-sm btn-outline-secondary text-white';});
+  btn.className='btn btn-sm gold-bg';
+  ['chart','compare','photos'].forEach(function(x){
+    var el = document.getElementById('tab-'+x);
+    if(el) el.style.display = (x==t) ? 'block' : 'none';
+  });
+  if(t=='chart') setTimeout(renderPChart,200);
+});
+
+// Chart
 function renderPChart(){
-  if(!chartData||chartData.length<2){if(hint)hint.textContent='📊 Need 2+ sessions for chart';return}
-  var ctx=document.getElementById('pChart');if(!ctx)return;
-  if(pChart)pChart.destroy();
-  if(hint)hint.textContent='📈 '+chartData.length+' sessions';
-  var C={w:'#f0d07a',f:'#ff6b6b',wa:'#4ec97e',h:'#00b4d8',a:'#c98a3a',v:'#ff8c00',m:'#a78bfa',b:'#34d399'};
-  pChart=new Chart(ctx,{type:'line',data:{labels:chartData.map(d=>d.date.slice(5)),
+  if(!chartData||chartData.length<2) return;
+  var ctx=document.getElementById('pChart'); if(!ctx) return;
+  if(pChart) pChart.destroy();
+  var C={w:'#f0d07a',f:'#ff6b6b',wa:'#4ec97e',h:'#00b4d8',a:'#c98a3a',v:'#ff8c00',m:'#a78bfa'};
+  pChart=new Chart(ctx,{type:'line',data:{labels:chartData.map(function(d){return d.date.slice(5);}),
     datasets:[
-      {label:'Weight (kg)',data:chartData.map(d=>d.weight),borderColor:C.w,backgroundColor:C.w+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8},
-      {label:'Body Fat %',data:chartData.map(d=>d.body_fat),borderColor:C.f,backgroundColor:C.f+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
-      {label:'Waist (cm)',data:chartData.map(d=>d.waist),borderColor:C.wa,backgroundColor:C.wa+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
-      {label:'Hip (cm)',data:chartData.map(d=>d.hip),borderColor:C.h,backgroundColor:C.h+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
-      {label:'Visceral Fat',data:chartData.map(d=>d.visceral_fat),borderColor:C.v,backgroundColor:C.v+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
-      {label:'Muscle %',data:chartData.map(d=>d.muscle_mass),borderColor:C.m,backgroundColor:C.m+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
-      {label:'Body Age',data:chartData.map(d=>d.body_age||null),borderColor:C.a,backgroundColor:C.a+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true}
+      {label:'Weight (kg)',data:chartData.map(function(d){return d.weight;}),borderColor:C.w,backgroundColor:C.w+'44',fill:true,tension:.4,pointRadius:5},
+      {label:'Body Fat %',data:chartData.map(function(d){return d.body_fat;}),borderColor:C.f,backgroundColor:C.f+'44',fill:true,tension:.4,pointRadius:5,hidden:true},
+      {label:'Waist (cm)',data:chartData.map(function(d){return d.waist;}),borderColor:C.wa,backgroundColor:C.wa+'44',fill:true,tension:.4,pointRadius:5,hidden:true},
+      {label:'Hip (cm)',data:chartData.map(function(d){return d.hip;}),borderColor:C.h,backgroundColor:C.h+'44',fill:true,tension:.4,pointRadius:5,hidden:true},
+      {label:'Visceral',data:chartData.map(function(d){return d.visceral_fat;}),borderColor:C.v,backgroundColor:C.v+'44',fill:true,tension:.4,pointRadius:5,hidden:true},
+      {label:'Muscle %',data:chartData.map(function(d){return d.muscle_mass;}),borderColor:C.m,backgroundColor:C.m+'44',fill:true,tension:.4,pointRadius:5,hidden:true}
     ]},
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:true,position:'bottom',labels:{color:'#ccc',font:{size:10},boxWidth:12,padding:8,usePointStyle:true},
-          onClick:function(e,item,legend){var idx=item.datasetIndex;var ci=this.chart;ci.data.datasets[idx].hidden=!ci.data.datasets[idx].hidden;ci.update();}},
-        tooltip:{backgroundColor:'#1a1a2e',titleColor:'#f0d07a',bodyColor:'#fff',borderColor:'#333',borderWidth:1,padding:10,
-          callbacks:{label:function(ctx){return ctx.dataset.label+': '+ctx.raw}}}
-      },
-      scales:{x:{ticks:{color:'#8a8a9a',font:{size:10}},grid:{color:'#252540'}},y:{ticks:{color:'#8a8a9a',font:{size:10}},grid:{color:'#252540'}}},
+      plugins:{legend:{display:true,position:'bottom',labels:{color:'#ccc',font:{size:9},boxWidth:10,padding:6}}},
+      scales:{x:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}},y:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}}},
       interaction:{mode:'index',intersect:false}
     }});
 }
+setTimeout(renderPChart,300);
 
-function csw(m){
-  if(!pChart)return;
-  var b=pChart.data.datasets;
-  document.querySelectorAll('.chart-btn').forEach(x=>x.className='chart-btn');
-  if(m=='weight'){b.forEach((d,i)=>d.hidden=i!=0);document.getElementById('csw').className='chart-btn act'}
-  else if(m=='fat'){b.forEach((d,i)=>d.hidden=i!=1);document.getElementById('csf').className='chart-btn act'}
-  else if(m=='size'){b.forEach((d,i)=>d.hidden=!(i==2||i==3));document.getElementById('css').className='chart-btn act'}
-  else if(m=='visceral'){b.forEach((d,i)=>d.hidden=i!=4);document.getElementById('csv').className='chart-btn act'}
-  else if(m=='muscle'){b.forEach((d,i)=>d.hidden=i!=5);document.getElementById('csm').className='chart-btn act'}
-  else if(m=='age'){b.forEach((d,i)=>d.hidden=i!=6);document.getElementById('csa').className='chart-btn act'}
-  else{b.forEach((d,i)=>d.hidden=false);document.getElementById('csall').className='chart-btn act'}
-  pChart.update();
-}
-
-function ctb(t){
-  document.querySelectorAll('#main-tabs button').forEach(b=>b.classList.remove('act'));
-  var btn=document.querySelector('#main-tabs button[data-tab="'+t+'"]');
-  if(btn)btn.classList.add('act');
-  ['chart','compare','photos','history'].forEach(function(x){
-    var el=document.getElementById('tab-'+x);
-    if(el)el.style.display=x==t?'block':'none';
-  });
-  if(t==='chart')setTimeout(renderPChart,200);
-}
-
-// Setup tab events
-document.addEventListener('DOMContentLoaded',function(){
-  document.querySelectorAll('#main-tabs button').forEach(function(b){
-    b.addEventListener('click',function(){ctb(this.getAttribute('data-tab'));});
-    b.addEventListener('touchstart',function(e){e.preventDefault();ctb(this.getAttribute('data-tab'));},{passive:false});
-  });
-});
-
-function findSession(id){return sessionsJson.find(s=>s.id==id)}
+// Compare
+function findSession(id){return sessionsJson.find(function(s){return s.id==id;});}
 
 function doCompare(){
   var id1=document.getElementById('cmp1').value;
   var id2=document.getElementById('cmp2').value;
   var r=document.getElementById('cmp-result');
-  if(!id1||!id2||id1==id2){r.innerHTML='<div class="text-secondary small mt-2">Select two different dates to compare</div>';return}
+  if(!id1||!id2||id1==id2){r.innerHTML='<div class="text-secondary small">Select two different dates</div>';return;}
   var s1=findSession(id1),s2=findSession(id2);
-  if(!s1||!s2){r.innerHTML='<div class="text-danger small">Session not found</div>';return}
+  if(!s1||!s2){r.innerHTML='<div class="text-danger small">Not found</div>';return;}
   var fields=[
-    {l:'Weight (kg)',k1:'weight',k2:'weight',less:true,unit:'kg',r:1},
-    {l:'Body Fat %',k1:'body_fat',k2:'body_fat',less:true,unit:'%',r:1},
-    {l:'Visceral Fat',k1:'visceral_fat',k2:'visceral_fat',less:true,unit:'',r:0},
-    {l:'Muscle %',k1:'muscle_mass',k2:'muscle_mass',less:false,unit:'%',r:1},
-    {l:'Waist (cm)',k1:'waist',k2:'waist',less:true,unit:'cm',r:0},
-    {l:'Hip (cm)',k1:'hip',k2:'hip',less:true,unit:'cm',r:0},
-    {l:'BMR',k1:'bmr',k2:'bmr',less:false,unit:'',r:0},
-    {l:'Body Age',k1:'body_age',k2:'body_age',less:true,unit:'yr',r:0}
+    {l:'Weight',k:'weight',u:'kg',r:1,less:true},
+    {l:'Body Fat',k:'body_fat',u:'%',r:1,less:true},
+    {l:'Visceral',k:'visceral_fat',u:'',r:0,less:true},
+    {l:'Waist',k:'waist',u:'cm',r:0,less:true},
+    {l:'Hip',k:'hip',u:'cm',r:0,less:true},
+    {l:'BMR',k:'bmr',u:'',r:0,less:false},
+    {l:'Muscle %',k:'muscle_mass',u:'%',r:1,less:false}
   ];
-  var html='<div class="card p-2 mt-2" style="background:#1a1a2e"><table style="width:100%;font-size:12px;border-collapse:collapse">';
-  html+='<tr style="border-bottom:1px solid #333"><td style="padding:6px 4px;color:#8a8a9a">Metric</td><td style="padding:6px 4px;text-align:center;color:#f0d07a">'+s1.date.slice(0,10)+'</td><td style="padding:6px 4px;text-align:center;color:#f0d07a">'+s2.date.slice(0,10)+'</td><td style="padding:6px 4px;text-align:center">Change</td></tr>';
+  var html='<table style="width:100%;font-size:11px;border-collapse:collapse">';
+  html+='<tr style="border-bottom:1px solid #333"><td style="padding:4px;color:#8a8a9a">Metric</td><td style="padding:4px;text-align:center;color:#f0d07a">'+s1.date.slice(0,10)+'</td><td style="padding:4px;text-align:center;color:#f0d07a">'+s2.date.slice(0,10)+'</td><td style="padding:4px;text-align:center">Change</td></tr>';
   fields.forEach(function(f){
-    var v1=s1[f.k1],v2=s2[f.k2];
+    var v1=s1[f.k],v2=s2[f.k];
     if(v1==null||v2==null)return;
     v1=Number(v1).toFixed(f.r);v2=Number(v2).toFixed(f.r);
     var diff=(v2-v1).toFixed(f.r);
     var good=f.less?(diff<0):(diff>0);
     var color=diff==0?'#f0d07a':(good?'#4ec97e':'#ff6b6b');
     var icon=diff==0?'➡️':(good?'🟢':'🔴');
-    html+='<tr style="border-bottom:1px solid #252540"><td style="padding:5px 4px;color:#ccc">'+f.l+'</td>';
-    html+='<td style="padding:5px 4px;text-align:center;color:#fff">'+v1+f.unit+'</td>';
-    html+='<td style="padding:5px 4px;text-align:center;color:#fff">'+v2+f.unit+'</td>';
-    html+='<td style="padding:5px 4px;text-align:center;color:'+color+'">'+icon+' '+(diff>0?'+':'')+diff+f.unit+'</td></tr>';
+    html+='<tr style="border-bottom:1px solid #252540"><td style="padding:4px;color:#ccc">'+f.l+'</td><td style="padding:4px;text-align:center;color:#fff">'+v1+f.u+'</td><td style="padding:4px;text-align:center;color:#fff">'+v2+f.u+'</td><td style="padding:4px;text-align:center;color:'+color+'">'+icon+' '+(diff>0?'+':'')+diff+f.u+'</td></tr>';
   });
-  html+='</table></div>';
+  html+='</table>';
   r.innerHTML=html;
 }
-setTimeout(renderPChart,300);
 </script>
 </body></html>
