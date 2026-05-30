@@ -139,9 +139,9 @@ tr:last-child td{border:none}
 </div><!-- container -->
 
 <script>
-let chartData = {{ chart_json }};
-let sessionsData = {{ sessions_json }};
-let photosData = {{ photos_json }};
+let chartData = {{ chart_json | safe }};
+let sessionsData = {{ sessions_json | safe }};
+let photosData = {{ photos_json | safe }};
 let pChart = null;
 
 // Compare
