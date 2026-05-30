@@ -124,10 +124,14 @@ tr:last-child td{border:none}
 
 <!-- Trend Chart -->
 <div class="card"><div class="card-body">
-<div class="tab-bar" id="chart-tabs">
+<div class="tab-bar" id="chart-tabs" style="flex-wrap:wrap">
 <button class="active" data-metric="weight">⚖️ Weight</button>
 <button data-metric="fat">💪 Fat %</button>
-<button data-metric="size">📏 Waist & Hip</button>
+<button data-metric="visceral">🔥 Visceral</button>
+<button data-metric="muscle">💪 Muscle</button>
+<button data-metric="bmr">⚡ BMR</button>
+<button data-metric="waist">📏 Waist</button>
+<button data-metric="hips">📐 Hips</button>
 </div>
 <div style="height:200px"><canvas id="cChart"></canvas></div>
 </div></div>
@@ -216,19 +220,30 @@ function renderChart(metric){
   var active=document.querySelector('#chart-tabs button[data-metric="'+metric+'"]');
   if(active)active.className='btn-outline active';
   
-  var datasets=[];
-  if(metric=='weight'){
-    datasets.push({label:'Weight (kg)',data:chartData.map(function(d){return d.weight;}),borderColor:'#c98a3a',backgroundColor:'#c98a3a22',fill:true,tension:.4,pointRadius:5});
-  }else if(metric=='fat'){
-    datasets.push({label:'Body Fat %',data:chartData.map(function(d){return d.body_fat;}),borderColor:'#ff6b6b',backgroundColor:'#ff6b6b22',fill:true,tension:.4,pointRadius:5});
-  }else{
-    datasets.push({label:'Waist (cm)',data:chartData.map(function(d){return d.waist;}),borderColor:'#4ec97e',backgroundColor:'#4ec97e22',fill:true,tension:.4,pointRadius:5});
-    datasets.push({label:'Hip (cm)',data:chartData.map(function(d){return d.hip;}),borderColor:'#00b4d8',backgroundColor:'#00b4d822',fill:true,tension:.4,pointRadius:5});
-  }
+  var allDatasets={
+    weight:{label:'Weight (kg)',data:chartData.map(function(d){return d.weight;}),color:'#c98a3a'},
+    fat:{label:'Body Fat %',data:chartData.map(function(d){return d.body_fat;}),color:'#ff6b6b'},
+    visceral:{label:'Visceral Fat',data:chartData.map(function(d){return d.visceral_fat;}),color:'#ff8c00'},
+    muscle:{label:'Muscle %',data:chartData.map(function(d){return d.muscle_mass;}),color:'#a78bfa'},
+    bmr:{label:'BMR',data:chartData.map(function(d){return d.bmr;}),color:'#34d399'},
+    waist:{label:'Waist (cm)',data:chartData.map(function(d){return d.waist;}),color:'#4ec97e'},
+    hips:{label:'Hip (cm)',data:chartData.map(function(d){return d.hip;}),color:'#00b4d8'}
+  };
   
-  pChart=new Chart(ctx,{type:'line',data:{labels:chartData.map(function(d){return d.date.slice(5);}),datasets:datasets},
+  var ds=[];
+  if(metric=='weight'){ds.push(toDs(allDatasets.weight));}
+  else if(metric=='fat'){ds.push(toDs(allDatasets.fat));}
+  else if(metric=='visceral'){ds.push(toDs(allDatasets.visceral));}
+  else if(metric=='muscle'){ds.push(toDs(allDatasets.muscle));}
+  else if(metric=='bmr'){ds.push(toDs(allDatasets.bmr));}
+  else if(metric=='waist'){ds.push(toDs(allDatasets.waist));}
+  else if(metric=='hips'){ds.push(toDs(allDatasets.hips));}
+  
+  function toDs(m){return {label:m.label,data:m.data,borderColor:m.color,backgroundColor:m.color+'22',fill:true,tension:.4,pointRadius:5};}
+  
+  pChart=new Chart(ctx,{type:'line',data:{labels:chartData.map(function(d){return d.date.slice(5);}),datasets:ds},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:metric=='size',labels:{font:{size:10}}}},
+      plugins:{legend:{display:false}},
       scales:{x:{ticks:{font:{size:10}},grid:{color:'#f0f0f0'}},y:{ticks:{font:{size:10}},grid:{color:'#f0f0f0'}}},
       interaction:{mode:'index',intersect:false}
     }});
