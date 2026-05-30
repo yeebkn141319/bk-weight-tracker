@@ -1,6 +1,18 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
-from werkzeug.security import generate_password_hash, check_password_hash
-import importlib.metadata as _im
+import hashlib, secrets
+
+def _hash_pw(pw):
+    salt = secrets.token_hex(16)
+    h = hashlib.sha256((salt + pw).encode()).hexdigest()
+    return f'sha256${salt}${h}'
+
+def _check_pw(pw, stored):
+    try:
+        parts = stored.split('$')
+        if parts[0] != 'sha256': return False
+        h = hashlib.sha256((parts[1] + pw).encode()).hexdigest()
+        return h == parts[2]
+    except: return False
 from werkzeug.utils import secure_filename
 from datetime import datetime, date, timedelta
 from PIL import Image, ImageDraw, ImageFont
@@ -64,7 +76,7 @@ def init_db():
         cur.execute("CREATE TABLE IF NOT EXISTS photos (id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id), filename TEXT NOT NULL, date TEXT NOT NULL, angle TEXT DEFAULT 'front', created_at TEXT DEFAULT CURRENT_TIMESTAMP)")
         cur.execute("SELECT id FROM coach WHERE username='bk'")
         if not cur.fetchone():
-            cur.execute("INSERT INTO coach (username, password, name) VALUES (%s, %s, %s)", ['bk', generate_password_hash('bkadmin2026'), 'BK'])
+            cur.execute("INSERT INTO coach (username, password, name) VALUES (%s, %s, %s)", ['bk', _hash_pw('bkadmin2026'), 'BK'])
         conn.commit()
         cur.close()
     else:
@@ -76,7 +88,7 @@ def init_db():
         ''')
         coach = conn.execute("SELECT id FROM coach WHERE username='bk'").fetchone()
         if not coach:
-            conn.execute("INSERT INTO coach (username, password, name) VALUES (?, ?, ?)", ['bk', generate_password_hash('bkadmin2026'), 'BK'])
+            conn.execute("INSERT INTO coach (username, password, name) VALUES (?, ?, ?)", ['bk', _hash_pw('bkadmin2026'), 'BK'])
         conn.commit()
     conn.close()
 
@@ -138,12 +150,12 @@ def login():
             conn = get_db()
             c = _exec(conn, "SELECT * FROM coach WHERE username=?", [u]).fetchone()
             conn.close()
-            debug = f'User={u}, Found={c is not None}, WZ={_im.version("werkzeug")}'
+            debug = f'User={u}, Found={c is not None}'
             if c:
                 pw_hash = c['password']
                 debug += f', Hash={pw_hash[:25]}...'
                 try:
-                    match = check_password_hash(pw_hash, p)
+                    match = _check_pw(pw_hash, p)
                     debug += f', Match={match}'
                 except Exception as e:
                     debug += f', CheckErr={e}'
@@ -163,7 +175,7 @@ def client_login():
         conn = get_db()
         c = _exec(conn, "SELECT * FROM clients WHERE phone=? AND is_active=1", [phone]).fetchone()
         conn.close()
-        if c and check_password_hash(c['password'],pw):
+        if c and _check_pw(c['password'],pw):
             session['client_id']=c['id']; session['client_name']=c['name']; session.permanent=True
             return redirect(url_for('client_view'))
         return render_template('client_login.html',error='Invalid')
@@ -223,7 +235,7 @@ def add_client():
         conn = get_db()
         try:
             _exec(conn, "INSERT INTO clients (name,phone,birthday,height,gender,password,goal_weight) VALUES (?,?,?,?,?,?,?)",
-                  [name,phone,bday,height,gender,generate_password_hash(pw),goal_w])
+                  [name,phone,bday,height,gender,_hash_pw(pw),goal_w])
             conn.commit()
             conn.close()
             return redirect(url_for('coach_dash'))
