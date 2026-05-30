@@ -46,7 +46,7 @@ input:focus{outline:none;border-color:#c98a3a}
 <div class="d-flex flex-wrap gap-1 mb-1">
 <div class="st"><div class="st-lbl">Weight</div><div class="st-val">{{ s.weight }}kg</div></div>
 <div class="st"><div class="st-lbl">Body Fat</div><div class="st-val">{{ s.body_fat }}%</div></div>
-<div class="st"><div class="st-lbl">Visceral</div><div class="st-val">{{ s.visceral_fat }}</div></div>
+<div class="st"><div class="st-lbl">Visceral</div><div class="st-val">{{ '%.1f'|format(s.visceral_fat|float) if s.visceral_fat else '-' }}</div></div>
 <div class="st"><div class="st-lbl">Muscle</div><div class="st-val">{{ s.muscle_mass }}%</div></div>
 <div class="st"><div class="st-lbl">BMR</div><div class="st-val">{{ s.bmr }}</div></div>
 <div class="st"><div class="st-lbl">B.Age</div><div class="st-val" style="color:{% if age_gap>0 %}#ff6b6b{% elif age_gap<0 %}#4ec97e{% else %}#f0d07a{% endif %}">{{ s.body_age }}yr</div></div>
