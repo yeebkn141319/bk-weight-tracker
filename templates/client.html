@@ -16,6 +16,8 @@
 .photo-g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .photo-g img{width:100%;border-radius:10px;cursor:pointer}
 .stats-r{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #252540;font-size:12px}
+.chart-btn{font-size:11px;padding:4px 8px;border:1px solid #333;background:transparent;color:#ccc;border-radius:8px;cursor:pointer;white-space:nowrap}
+.chart-btn.act{background:#c98a3a;color:#fff;border-color:#c98a3a}
 @media(min-width:768px){.container{max-width:600px;margin:0 auto;padding:16px}}
 @media(min-width:1024px){.container{max-width:800px;margin:0 auto;padding:24px}}
 </style></head>
@@ -30,38 +32,37 @@
 {% set s_prev = sessions[1] if sessions|length > 1 else None %}
 
 {% if s %}
-{% set bmi = (s.weight / ((client.height/100)**2))|round(1) %}
-{% set bf_kg = (s.weight * s.body_fat / 100)|round(1) if s.body_fat else 0 %}
-{% set muscle_kg = (s.weight * s.muscle_mass / 100)|round(1) if s.muscle_mass else 0 %}
+{% set bmi = (s.weight / ((client.height/100)**2))|round(1) if s.weight else 0 %}
+{% set bf_kg = (s.weight * s.body_fat / 100)|round(1) if (s.weight and s.body_fat) else 0 %}
+{% set muscle_kg = (s.weight * s.muscle_mass / 100)|round(1) if (s.weight and s.muscle_mass) else 0 %}
 {% set bio_age = client.birthday|calc_bio_age %}
 
-<!-- Traffic light -->
 {% set trends = [] %}
 {% if s_prev %}
-{% if s.weight < s_prev.weight %}{% set _ = trends.append(1) %}{% elif s.weight > s_prev.weight %}{% set _ = trends.append(0) %}{% endif %}
-{% if s.body_fat and s_prev.body_fat and s.body_fat < s_prev.body_fat %}{% set _ = trends.append(1) %}{% elif s.body_fat and s_prev.body_fat and s.body_fat > s_prev.body_fat %}{% set _ = trends.append(0) %}{% endif %}
-{% if s.waist and s_prev.waist and s.waist < s_prev.waist %}{% set _ = trends.append(1) %}{% elif s.waist and s_prev.waist and s.waist > s_prev.waist %}{% set _ = trends.append(0) %}{% endif %}
+{% if s.weight and s_prev.weight and s.weight < s_prev.weight %}{% set _ = trends.append(1) %}
+{% elif s.weight and s_prev.weight and s.weight > s_prev.weight %}{% set _ = trends.append(0) %}{% endif %}
+{% if s.body_fat and s_prev.body_fat and s.body_fat < s_prev.body_fat %}{% set _ = trends.append(1) %}
+{% elif s.body_fat and s_prev.body_fat and s.body_fat > s_prev.body_fat %}{% set _ = trends.append(0) %}{% endif %}
+{% if s.waist and s_prev.waist and s.waist < s_prev.waist %}{% set _ = trends.append(1) %}
+{% elif s.waist and s_prev.waist and s.waist > s_prev.waist %}{% set _ = trends.append(0) %}{% endif %}
 {% endif %}
-
 {% set good = trends|select('equalto',1)|list|length %}
 {% set bad = trends|select('equalto',0)|list|length %}
-{% if good > bad %}{% set tl_color = '#4ec97e' %}{% set tl_icon = '🟢' %}{% set tl_text = 'Good Progress!' %}
-{% elif bad > good %}{% set tl_color = '#ff6b6b' %}{% set tl_icon = '🔴' %}{% set tl_text = 'Needs Attention' %}
-{% elif trends|length > 0 %}{% set tl_color = '#f0d07a' %}{% set tl_icon = '🟡' %}{% set tl_text = 'Stable' %}
-{% else %}{% set tl_color = '#8a8a9a' %}{% set tl_icon = '⚪' %}{% set tl_text = 'Start Tracking' %}
-{% endif %}
+{% if good > bad %}{% set tl_c = '#4ec97e' %}{% set tl_i = '🟢' %}{% set tl_t = 'Great Progress!' %}
+{% elif bad > good %}{% set tl_c = '#ff6b6b' %}{% set tl_i = '🔴' %}{% set tl_t = 'Needs Attention' %}
+{% elif trends|length > 0 %}{% set tl_c = '#f0d07a' %}{% set tl_i = '🟡' %}{% set tl_t = 'Stable' %}
+{% else %}{% set tl_c = '#8a8a9a' %}{% set tl_i = '⚪' %}{% set tl_t = 'Start Tracking' %}{% endif %}
 
-<div class="card p-3 text-center" style="border:2px solid {{ tl_color }}">
-<div style="font-size:36px">{{ tl_icon }}</div>
-<div style="font-size:18px;font-weight:700;color:{{ tl_color }}">{{ tl_text }}</div>
-<small class="text-secondary">Last session: {{ s.date|fmt_date }}</small>
+<div class="card p-3 text-center" style="border:2px solid {{ tl_c }}">
+<div style="font-size:36px">{{ tl_i }}</div>
+<div style="font-size:18px;font-weight:700;color:{{ tl_c }}">{{ tl_t }}</div>
+<small class="text-secondary">Last: {{ s.date|fmt_date }}</small>
 </div>
 
-<!-- Goal -->
 {% if client.goal_weight %}
 <div class="card p-3">
 <div class="d-flex justify-content-between">
-<div><small class="st-lbl">🎯 Goal Weight</small><div class="fw-bold gold" style="font-size:18px">{{ client.goal_weight }}kg</div></div>
+<div><small class="st-lbl">🎯 Goal</small><div class="fw-bold gold" style="font-size:18px">{{ client.goal_weight }}kg</div></div>
 <div class="text-end"><small class="st-lbl">Current</small><div class="fw-bold" style="font-size:18px;color:{% if s.weight <= client.goal_weight %}#4ec97e{% else %}#f0d07a{% endif %}">{{ s.weight }}kg</div></div>
 </div>
 {% set pct = ((client.goal_weight / s.weight) * 100)|round(1) if s.weight else 0 %}
@@ -71,7 +72,6 @@
 </div>
 {% endif %}
 
-<!-- Current stats -->
 <div class="card p-3">
 <div class="title-sm">Latest — {{ s.date|fmt_date }}</div>
 <div class="d-flex flex-wrap gap-1 mb-1">
@@ -93,40 +93,29 @@
 <div class="st"><div class="st-lbl">Thigh</div><div class="st-val">{{ s.thigh }}cm</div></div>
 </div>
 {% if s.body_age %}
-<small class="text-secondary">Bio Age: {{ bio_age }}yr · {% if s.body_age < bio_age %}🟢 {{ bio_age - s.body_age }}yr younger than your age!{% elif s.body_age > bio_age %}🔴 {{ s.body_age - bio_age }}yr older{% else %}✅ On track{% endif %}</small>
+<small class="text-secondary">Biological Age: {{ bio_age }}yr · {% if s.body_age < bio_age %}🟢 {{ bio_age - s.body_age }}yr younger!{% elif s.body_age > bio_age %}🔴 {{ s.body_age - bio_age }}yr older{% else %}✅ On track{% endif %}</small>
 {% endif %}
 </div>
 
 {% if s_prev %}
 <div class="card p-3">
-<div class="title-sm">↔️ Comparison: {{ s_prev.date|fmt_date }} vs {{ s.date|fmt_date }}</div>
+<div class="title-sm">↔️ Last Comparison</div>
 <div class="d-flex flex-wrap gap-1">
-{% for label, val_old, val_new in [
-  ('Weight', s_prev.weight, s.weight),
-  ('BF %', s_prev.body_fat, s.body_fat),
-  ('Waist', s_prev.waist, s.waist),
-  ('Hip', s_prev.hip, s.hip)
-] %}
-{% if val_old and val_new %}
-{% set diff = (val_new - val_old)|round(1) %}
-<div class="st" style="min-width:80px">
+{% for label, vo, vn in [('Weight',s_prev.weight,s.weight),('BF %',s_prev.body_fat,s.body_fat),('Waist',s_prev.waist,s.waist),('Hip',s_prev.hip,s.hip)] %}
+{% if vo and vn %}{% set diff = (vn - vo)|round(1) %}
+<div class="st" style="min-width:75px">
 <div class="st-lbl">{{ label }}</div>
-<div style="font-size:12px;color:#8a8a9a">{{ val_old }} → </div>
-<div style="font-weight:700;font-size:14px;color:{% if diff < 0 and label != 'Muscle' %}#4ec97e{% elif diff > 0 and label != 'Muscle' %}#ff6b6b{% else %}#f0d07a{% endif %}">
-{{ val_new }}{% if diff != 0 %} ({{ '+' if diff > 0 }}{{ diff }}){% endif %}
-</div>
-</div>
-{% endif %}
-{% endfor %}
+<div class="text-secondary" style="font-size:10px">{{ vo }} →</div>
+<div style="font-weight:700;font-size:13px;color:{% if diff < 0 and label != 'Muscle' %}#4ec97e{% elif diff > 0 and label != 'Muscle' %}#ff6b6b{% else %}#f0d07a{% endif %}">{{ vn }}{% if diff != 0 %} ({{ '+' if diff > 0 }}{{ diff }}){% endif %}</div>
+</div>{% endif %}{% endfor %}
 </div>
 </div>
 {% endif %}
 
 {% else %}
-<div class="card p-4 text-center"><p class="text-secondary mb-0">Your coach hasn't recorded any measurements yet. Check back after your next session!</p></div>
+<div class="card p-4 text-center"><p class="text-secondary mb-0">No measurements yet. Check back after your next session!</p></div>
 {% endif %}
 
-<!-- Tabs -->
 <div class="tab">
 <button class="act" onclick="ctb('chart')" id="tc-chart">📈 Progress</button>
 <button onclick="ctb('photos')" id="tc-photos">📸 Photos</button>
@@ -135,12 +124,17 @@
 
 <div id="tab-chart">
 <div class="card p-3">
-<div class="d-flex gap-2 mb-2 flex-wrap">
-<button class="btn btn-sm gold-bg" onclick="csw('weight')">Weight</button>
-<button class="btn btn-sm btn-outline-secondary text-white" onclick="csw('bodyfat')">Body Fat</button>
-<button class="btn btn-sm btn-outline-secondary text-white" onclick="csw('all')">All</button>
+<div class="d-flex gap-1 mb-2" style="overflow-x:auto;white-space:nowrap;padding-bottom:4px">
+<button class="chart-btn act" onclick="csw('weight')" id="csw">⚖️ Weight</button>
+<button class="chart-btn" onclick="csw('fat')" id="csf">💪 Fat %</button>
+<button class="chart-btn" onclick="csw('size')" id="css">📏 Waist & Hip</button>
+<button class="chart-btn" onclick="csw('visceral')" id="csv">🔥 Visceral</button>
+<button class="chart-btn" onclick="csw('muscle')" id="csm">💪 Muscle</button>
+<button class="chart-btn" onclick="csw('age')" id="csa">🧬 Body Age</button>
+<button class="chart-btn" onclick="csw('all')" id="csall">📊 All</button>
 </div>
-<canvas id="pChart" height="220"></canvas>
+<div style="position:relative;height:260px"><canvas id="pChart"></canvas></div>
+<div class="mt-2 small text-secondary text-center" id="chart-hint">⬆️ Tap buttons to switch view</div>
 </div>
 </div>
 
@@ -159,9 +153,9 @@
 <div id="tab-history" style="display:none">
 {% for s in sessions %}
 <div class="stats-r">
-<span class="text-secondary">{{ s.date|fmt_date }}</span>
-<span class="gold fw-bold">{{ s.weight }}kg</span>
-<span class="text-secondary">{% if s.body_fat %}F:{{ s.body_fat }}%{% endif %}</span>
+<span class="text-secondary" style="min-width:70px">{{ s.date|fmt_date }}</span>
+<span class="gold fw-bold" style="min-width:50px">{{ s.weight }}kg</span>
+<span class="text-secondary flex-fill">{% if s.body_fat %}F:{{ s.body_fat }}%{% endif %}{% if s.waist %} · W:{{ s.waist }}{% endif %}</span>
 </div>
 {% endfor %}
 {% if not sessions %}<div class="card p-4 text-center"><p class="text-secondary mb-0">No history yet.</p></div>{% endif %}
@@ -169,30 +163,59 @@
 </div>
 
 <script>
-let pChart = null; let chartData = {{ chart_json }};
+let pChart=null;
+let chartData={{ chart_json }};
+let hint=document.getElementById('chart-hint');
+
 function renderPChart(){
-if(!chartData||chartData.length<2)return;
-let ctx=document.getElementById('pChart');if(!ctx)return;
-if(pChart)pChart.destroy();
-pChart=new Chart(ctx,{type:'line',data:{labels:chartData.map(d=>d.date.slice(5)),
-datasets:[{label:'Weight (kg)',data:chartData.map(d=>d.weight),borderColor:'#c98a3a',backgroundColor:'#c98a3a22',fill:true,tension:.3,pointRadius:4},
-{label:'Body Fat %',data:chartData.map(d=>d.body_fat),borderColor:'#ff6b6b',backgroundColor:'#ff6b6b22',fill:true,tension:.3,pointRadius:4,hidden:true},
-{label:'Waist (cm)',data:chartData.map(d=>d.waist),borderColor:'#4ec97e',backgroundColor:'#4ec97e22',fill:true,tension:.3,pointRadius:4,hidden:true},
-{label:'Hip (cm)',data:chartData.map(d=>d.hip),borderColor:'#00b4d8',backgroundColor:'#00b4d822',fill:true,tension:.3,pointRadius:4,hidden:true}]},
-options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#fff',font:{size:10}}}},
-scales:{x:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}},y:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}}}}});
+  if(!chartData||chartData.length<2){if(hint)hint.textContent='📊 Need 2+ sessions for chart';return}
+  var ctx=document.getElementById('pChart');if(!ctx)return;
+  if(pChart)pChart.destroy();
+  if(hint)hint.textContent='📈 '+chartData.length+' sessions';
+  var C={w:'#f0d07a',f:'#ff6b6b',wa:'#4ec97e',h:'#00b4d8',a:'#c98a3a',v:'#ff8c00',m:'#a78bfa',b:'#34d399'};
+  pChart=new Chart(ctx,{type:'line',data:{labels:chartData.map(d=>d.date.slice(5)),
+    datasets:[
+      {label:'Weight (kg)',data:chartData.map(d=>d.weight),borderColor:C.w,backgroundColor:C.w+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8},
+      {label:'Body Fat %',data:chartData.map(d=>d.body_fat),borderColor:C.f,backgroundColor:C.f+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Waist (cm)',data:chartData.map(d=>d.waist),borderColor:C.wa,backgroundColor:C.wa+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Hip (cm)',data:chartData.map(d=>d.hip),borderColor:C.h,backgroundColor:C.h+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Visceral Fat',data:chartData.map(d=>d.visceral_fat),borderColor:C.v,backgroundColor:C.v+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Muscle %',data:chartData.map(d=>d.muscle_mass),borderColor:C.m,backgroundColor:C.m+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Body Age',data:chartData.map(d=>d.body_age||null),borderColor:C.a,backgroundColor:C.a+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'bottom',labels:{color:'#ccc',font:{size:10},boxWidth:12,padding:8,usePointStyle:true},
+          onClick:function(e,item,legend){var idx=item.datasetIndex;var ci=this.chart;ci.data.datasets[idx].hidden=!ci.data.datasets[idx].hidden;ci.update();}},
+        tooltip:{backgroundColor:'#1a1a2e',titleColor:'#f0d07a',bodyColor:'#fff',borderColor:'#333',borderWidth:1,padding:10,
+          callbacks:{label:function(ctx){return ctx.dataset.label+': '+ctx.raw}}}
+      },
+      scales:{x:{ticks:{color:'#8a8a9a',font:{size:10}},grid:{color:'#252540'}},y:{ticks:{color:'#8a8a9a',font:{size:10}},grid:{color:'#252540'}}},
+      interaction:{mode:'index',intersect:false}
+    }});
 }
-function ctb(t){document.querySelectorAll('.tab button').forEach(b=>b.classList.remove('act'));
-document.getElementById('tc-'+t).classList.add('act');
-document.getElementById('tab-chart').style.display=t==='chart'?'block':'none';
-document.getElementById('tab-photos').style.display=t==='photos'?'block':'none';
-document.getElementById('tab-history').style.display=t==='history'?'block':'none';
-if(t==='chart')setTimeout(renderPChart,200);}
-function csw(m){document.querySelectorAll('#tab-chart .btn').forEach(b=>b.className='btn btn-sm btn-outline-secondary text-white');
-if(m==='weight'){document.querySelector('#tab-chart .btn').className='btn btn-sm gold-bg';pChart.data.datasets.forEach((d,i)=>d.hidden=i!==0)}
-else if(m==='bodyfat'){document.querySelectorAll('#tab-chart .btn')[1].className='btn btn-sm gold-bg';pChart.data.datasets.forEach((d,i)=>d.hidden=i!==1)}
-else{document.querySelectorAll('#tab-chart .btn')[2].className='btn btn-sm gold-bg';pChart.data.datasets.forEach((d,i)=>d.hidden=i>=2)}
-pChart.update();}
+
+function csw(m){
+  if(!pChart)return;
+  var b=pChart.data.datasets;
+  document.querySelectorAll('.chart-btn').forEach(x=>x.className='chart-btn');
+  if(m=='weight'){b.forEach((d,i)=>d.hidden=i!=0);document.getElementById('csw').className='chart-btn act'}
+  else if(m=='fat'){b.forEach((d,i)=>d.hidden=i!=1);document.getElementById('csf').className='chart-btn act'}
+  else if(m=='size'){b.forEach((d,i)=>d.hidden=!(i==2||i==3));document.getElementById('css').className='chart-btn act'}
+  else if(m=='visceral'){b.forEach((d,i)=>d.hidden=i!=4);document.getElementById('csv').className='chart-btn act'}
+  else if(m=='muscle'){b.forEach((d,i)=>d.hidden=i!=5);document.getElementById('csm').className='chart-btn act'}
+  else if(m=='age'){b.forEach((d,i)=>d.hidden=i!=6);document.getElementById('csa').className='chart-btn act'}
+  else{b.forEach((d,i)=>d.hidden=false);document.getElementById('csall').className='chart-btn act'}
+  pChart.update();
+}
+
+function ctb(t){
+  document.querySelectorAll('.tab button').forEach(b=>b.classList.remove('act'));
+  document.getElementById('tc-'+t).classList.add('act');
+  ['chart','photos','history'].forEach(x=>document.getElementById('tab-'+x).style.display=x==t?'block':'none');
+  if(t==='chart')setTimeout(renderPChart,200);
+}
 setTimeout(renderPChart,300);
 </script>
 </body></html>

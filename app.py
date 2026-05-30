@@ -280,7 +280,7 @@ def client_view():
     if not client: conn.close(); session.clear(); return redirect(url_for('client_login'))
     sessions = _exec(conn, "SELECT * FROM sessions WHERE client_id=? ORDER BY date DESC LIMIT 100", [cid]).fetchall()
     photos = _exec(conn, "SELECT * FROM photos WHERE client_id=? ORDER BY date DESC", [cid]).fetchall()
-    chart_rows = _exec(conn, "SELECT date,weight,body_fat,waist,hip FROM sessions WHERE client_id=? ORDER BY date ASC", [cid]).fetchall()
+    chart_rows = _exec(conn, "SELECT date,weight,body_fat,waist,hip,visceral_fat,muscle_mass,bmr,body_age FROM sessions WHERE client_id=? ORDER BY date ASC", [cid]).fetchall()
     conn.close()
     return render_template('client.html',client=client,sessions=sessions,photos=photos,chart_json=json.dumps([dict(r) for r in chart_rows]))
 
