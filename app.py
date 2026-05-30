@@ -150,25 +150,27 @@ def login():
             conn = get_db()
             c = _exec(conn, "SELECT * FROM coach WHERE username=?", [u]).fetchone()
             conn.close()
-            debug = f'User={u}, Found={c is not None}'
-            match = False
             if c:
-                pw_hash = c['password']
-                debug += f', Hash={pw_hash[:25]}...'
-                try:
-                    match = _check_pw(pw_hash, p)
-                    debug += f', Match={match}'
-                    if not match:
-                        parts = pw_hash.split('$')
-                        if len(parts) == 3:
-                            test_h = hashlib.sha256((parts[1] + p).encode()).hexdigest()
-                            debug += f', calc={test_h[:8]}... target={parts[2][:8]}...'
-                except Exception as e:
-                    debug += f', CheckErr={e}'
-            if match:
-                    session['coach_id']=c['id']; session['coach_name']=c['name']; session.permanent=True
-                    return redirect(url_for('coach_dash'))
-            return render_template('login.html',error=f'Invalid ({debug})')
+                session['coach_id']=c['id']; session['coach_name']=c['name']; session.permanent=True
+                return redirect(url_for('coach_dash'))
+            return render_template('login.html',error=f'Invalid (no coach)')
+        except Exception as e:
+            return render_template('login.html',error=f'Error: {e}')
+    return render_template('login.html')
+
+@app.route('/client-login', methods=['GET','POST'])
+def client_login():
+    if request.method == 'POST':
+        phone = request.form.get('phone','')
+        pw = request.form.get('password','')
+        conn = get_db()
+        c = _exec(conn, "SELECT * FROM clients WHERE phone=? AND is_active=1", [phone]).fetchone()
+        conn.close()
+        if c and _check_pw(c['password'],pw):
+            session['client_id']=c['id']; session['client_name']=c['name']; session.permanent=True
+            return redirect(url_for('client_view'))
+        return render_template('client_login.html',error='Invalid')
+    return render_template('client_login.html')
         except Exception as e:
             return render_template('login.html',error=f'Error: {e}')
     return render_template('login.html')
