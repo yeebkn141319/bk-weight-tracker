@@ -1,258 +1,98 @@
 <!DOCTYPE html><html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>{{ client.name }} - My Transformation</title>
+<title>{{ client.name }} - My Progress</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 *{box-sizing:border-box}body{background:#0f0f1e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding-bottom:80px}
-.gold{color:#c98a3a}.card{background:#1a1a2e;border:none;border-radius:16px;margin-bottom:10px}
-.st{background:#252540;border-radius:10px;padding:6px;text-align:center;flex:1;min-width:50px}
-.st-lbl{font-size:8px;color:#8a8a9a;text-transform:uppercase}
-.st-val{font-size:13px;font-weight:700;color:#f0d07a}
-.title-sm{font-size:12px;color:#c98a3a;font-weight:600;margin-bottom:6px}
-.s-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #252540;cursor:pointer;text-decoration:none;color:#fff}
-.s-row:last-child{border:none}
-.s-row:hover{background:#25254033;margin:-8px;padding:8px;border-radius:10px}
-.s-date{min-width:80px;font-size:11px;color:#8a8a9a}
-.s-weight{min-width:55px;font-weight:700;font-size:14px}
-.s-change{min-width:55px;font-size:12px;text-align:right}
-.photo-g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.photo-g img{width:100%;border-radius:10px;cursor:pointer}
-@media(min-width:768px){.container{max-width:600px;margin:0 auto;padding:16px}}
-@media(min-width:1024px){.container{max-width:800px;margin:0 auto;padding:24px}}
+.gold{color:#c98a3a}.gold-bg{background:#c98a3a;border:none;color:#fff}.gold-bg:hover{background:#a06d2a;color:#fff}
+.card{background:#1a1a2e;border:none;border-radius:16px;margin-bottom:10px}
+.s-card{border-radius:12px;margin-bottom:8px;padding:12px;border-left:4px solid #8a8a9a}
+.s-card:hover{background:#2a2a48}
+.stat{text-align:center;flex:1;padding:6px 2px;min-width:0}
+.stat-lbl{font-size:8px;color:#8a8a9a;text-transform:uppercase;white-space:nowrap}
+.stat-val{font-size:16px;font-weight:700}
+.fltr{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid #333;background:transparent;color:#8a8a9a;cursor:pointer;text-decoration:none}
+.fltr.active,.fltr:hover{background:#c98a3a;color:#fff;border-color:#c98a3a}
+.s-badge{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600;white-space:nowrap;min-width:60px;text-align:center}
+@media(min-width:768px){.container{max-width:600px;margin:0 auto;padding:16px 16px 80px}}
+@media(min-width:1024px){.container{max-width:800px;margin:0 auto;padding:24px 16px 80px}}
 </style></head>
 <body>
 <div class="container">
 
-<!-- Header -->
-<div class="d-flex justify-content-between align-items-center mb-2">
-<div><h4 class="gold mb-0" style="font-size:20px">🏋️ My Transformation Journey</h4><small class="text-secondary">{{ client.name }}</small></div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+<div><h4 class="gold mb-0">🏋️ My Transformation Journey</h4><small class="text-secondary">{{ client.name }}</small></div>
 <a href="{{ url_for('logout') }}" class="text-secondary small text-decoration-none">Logout</a>
 </div>
 
-<!-- Quote -->
-<div id="quote-box" class="card p-2 text-center" style="border-left:3px solid #c98a3a">
-<div id="quote-text" class="gold" style="font-style:italic;font-size:13px;line-height:1.3"></div>
-<small id="quote-author" class="text-secondary" style="font-size:9px"></small>
-</div>
-
-<script>
-var quotes=[
-  {t:'"The journey of a thousand miles begins with a single step."',a:'- Lao Tzu'},
-  {t:'"Small daily improvements over time lead to stunning results."',a:'- Unknown'},
-  {t:'"Your body hears everything your mind says. Stay positive."',a:'- Unknown'},
-  {t:'"Strive for progress, not perfection."',a:'- Unknown'},
-  {t:'"Take care of your body. It\\'s the only place you have to live."',a:'- Jim Rohn'},
-  {t:'"The secret of getting ahead is getting started."',a:'- Mark Twain'},
-  {t:'"Your health is an investment, not an expense."',a:'- Unknown'},
-  {t:'"The body achieves what the mind believes."',a:'- Napoleon Hill'}
-];
-var q=quotes[Math.floor(Math.random()*quotes.length)];
-document.getElementById('quote-text').textContent=q.t;
-document.getElementById('quote-author').textContent=q.a;
-setTimeout(function(){document.getElementById('quote-box').style.opacity='0.3'},10000);
-</script>
-
-{% set s = sessions[0] if sessions else None %}
-{% set s_prev = sessions[1] if sessions|length > 1 else None %}
-
-{% if s %}
-
-<!-- Traffic Light -->
-{% set trends = [] %}
-{% if s_prev %}
-{% if s.weight and s_prev.weight and s.weight < s_prev.weight %}{% set _ = trends.append(1) %}
-{% elif s.weight and s_prev.weight and s.weight > s_prev.weight %}{% set _ = trends.append(0) %}{% endif %}
-{% if s.body_fat and s_prev.body_fat and s.body_fat < s_prev.body_fat %}{% set _ = trends.append(1) %}
-{% elif s.body_fat and s_prev.body_fat and s.body_fat > s_prev.body_fat %}{% set _ = trends.append(0) %}{% endif %}
-{% if s.waist and s_prev.waist and s.waist < s_prev.waist %}{% set _ = trends.append(1) %}
-{% elif s.waist and s_prev.waist and s.waist > s_prev.waist %}{% set _ = trends.append(0) %}{% endif %}
-{% endif %}
-{% set good = trends|select('equalto',1)|list|length %}
-{% set bad = trends|select('equalto',0)|list|length %}
-{% if good > bad %}{% set tl_c='#4ec97e' %}{% set tl_i='🟢' %}{% set tl_t='Great Progress!' %}
-{% elif bad > good %}{% set tl_c='#ff6b6b' %}{% set tl_i='🔴' %}{% set tl_t='Needs Attention' %}
-{% elif trends|length > 0 %}{% set tl_c='#f0d07a' %}{% set tl_i='🟡' %}{% set tl_t='Stable' %}
-{% else %}{% set tl_c='#8a8a9a' %}{% set tl_i='⚪' %}{% set tl_t='Getting Started' %}{% endif %}
-
-<div class="card p-2 text-center" style="border:2px solid {{ tl_c }}">
-<div style="font-size:28px">{{ tl_i }}</div>
-<div style="font-size:15px;font-weight:700;color:{{ tl_c }}">{{ tl_t }}</div>
-<small class="text-secondary">Latest: {{ s.date|fmt_date }} · {{ s.weight }}kg</small>
-</div>
-
-<!-- Goal bar -->
-{% if client.goal_weight %}
-<div class="card p-2">
-<div class="d-flex justify-content-between">
-<div><small class="st-lbl">🎯 Goal: {{ client.goal_weight }}kg</small></div>
-<div><small class="st-lbl">Current: <span style="color:{% if s.weight <= client.goal_weight %}#4ec97e{% else %}#f0d07a{% endif %}">{{ s.weight }}kg</span></small></div>
-</div>
-{% set pct = ((client.goal_weight / s.weight) * 100)|round(1) if s.weight else 0 %}
-<div style="height:5px;background:#252540;border-radius:3px;margin-top:4px;overflow:hidden">
-<div style="height:100%;background:#c98a3a;border-radius:3px;width:{{ pct if pct <= 100 else 100 }}%"></div>
-</div>
-</div>
-{% endif %}
-
-<!-- Latest Stats Bar -->
-<div class="d-flex gap-1 mb-1">
-<div class="st"><div class="st-lbl">Weight</div><div class="st-val">{{ s.weight }}kg</div></div>
-<div class="st"><div class="st-lbl">BF %</div><div class="st-val">{{ s.body_fat }}%</div></div>
-<div class="st"><div class="st-lbl">BF kg</div><div class="st-val">{{ (s.weight * s.body_fat / 100)|round(1) if (s.weight and s.body_fat) else '-' }}</div></div>
-<div class="st"><div class="st-lbl">BMI</div><div class="st-val">{{ (s.weight / ((client.height/100)**2))|round(1) if s.weight else '-' }}</div></div>
-</div>
-<div class="d-flex gap-1 mb-2">
-<div class="st"><div class="st-lbl">Waist</div><div class="st-val">{{ s.waist or '-' }}cm</div></div>
-<div class="st"><div class="st-lbl">Hip</div><div class="st-val">{{ s.hip or '-' }}cm</div></div>
-<div class="st"><div class="st-lbl">Visceral</div><div class="st-val">{{ s.visceral_fat or '-' }}</div></div>
-<div class="st"><div class="st-lbl">Muscle</div><div class="st-val">{{ s.muscle_mass or '-' }}%</div></div>
-</div>
-
-<!-- Session List like Coach View -->
-<div class="card p-2">
-<div class="title-sm">📋 All Sessions ({{ sessions|length }})</div>
+{% set sessions_count = sessions|length %}
+{% set improving = namespace(count=0) %}
+{% set stable = namespace(count=0) %}
+{% set regressing = namespace(count=0) %}
 {% for se in sessions %}
-<a class="s-row" href="#session-{{ se.id }}">
+{% if not loop.last %}
+{% set prev = sessions[loop.index] %}
+{% set w_diff = (se.weight - prev.weight)|round(1) if (se.weight and prev.weight) else 0 %}
+{% if w_diff < 0 %}{% set improving.count = improving.count + 1 %}
+{% elif w_diff > 0 %}{% set regressing.count = regressing.count + 1 %}
+{% else %}{% set stable.count = stable.count + 1 %}
+{% endif %}
+{% endif %}
+{% endfor %}
+
+<div class="card p-3">
+<div class="d-flex gap-1 text-center">
+<div class="stat"><div class="stat-lbl">Sessions</div><div class="stat-val gold">{{ sessions_count }}</div></div>
+<div class="stat"><div class="stat-lbl">🟢 Good</div><div class="stat-val" style="color:#4ec97e">{{ improving.count }}</div></div>
+<div class="stat"><div class="stat-lbl">🟡 Stable</div><div class="stat-val" style="color:#f0d07a">{{ stable.count }}</div></div>
+<div class="stat"><div class="stat-lbl">🔴 Needs</div><div class="stat-val" style="color:#ff6b6b">{{ regressing.count }}</div></div>
+</div>
+</div>
+
+<div class="d-flex gap-2 mb-3 flex-wrap">
+{% set f = request.args.get('filter','all') %}
+<a href="?filter=all" class="fltr {{ 'active' if f=='all' }}">All</a>
+<a href="?filter=good" class="fltr {{ 'active' if f=='good' }}">🟢 Good</a>
+<a href="?filter=stable" class="fltr {{ 'active' if f=='stable' }}">🟡 Stable</a>
+<a href="?filter=needs" class="fltr {{ 'active' if f=='needs' }}">🔴 Needs</a>
+</div>
+
+{% for se in sessions %}
 {% set prev_se = sessions[loop.index] if not loop.last else None %}
-<span class="s-date">{{ se.date[:10] }}</span>
-<span class="s-weight">{{ se.weight }}kg</span>
-{% if se.body_fat %}<span style="font-size:10px;color:#8a8a9a;flex:1">F:{{ se.body_fat }}%</span>{% else %}<span style="flex:1"></span>{% endif %}
-{% if prev_se and prev_se.weight %}
-{% set diff = (se.weight - prev_se.weight)|round(1) %}
-<span class="s-change" style="color:{% if diff < 0 %}#4ec97e{% elif diff > 0 %}#ff6b6b{% else %}#f0d07a{% endif %}">
-{% if diff < 0 %}🟢{% elif diff > 0 %}🔴{% else %}➡️{% endif %}
-{% if diff > 0 %}+{% endif %}{{ diff }}kg
-</span>
-{% endif %}
-</a>
-{% endfor %}
-</div>
-
+{% set w_diff = (se.weight - prev_se.weight)|round(1) if (se.weight and prev_se and prev_se.weight) else 0 %}
+{% if w_diff < 0 %}
+{% set badge = '🟢 -' + w_diff|abs|string + 'kg' %}
+{% set color = '#4ec97e' %}
+{% set trend = 'good' %}
+{% elif w_diff > 0 %}
+{% set badge = '🔴 +' + w_diff|string + 'kg' %}
+{% set color = '#ff6b6b' %}
+{% set trend = 'needs' %}
 {% else %}
-<div class="card p-4 text-center"><p class="text-secondary mb-0">No measurements yet. Check back after your next session!</p></div>
+{% set badge = '➡️ 0kg' %}
+{% set color = '#f0d07a' %}
+{% set trend = 'stable' %}
 {% endif %}
 
-<!-- Tabs -->
-<div class="card p-2">
-<div class="d-flex gap-2" id="main-tabs">
-<button class="btn btn-sm gold-bg" data-tab="chart">📈 Progress</button>
-<button class="btn btn-sm btn-outline-secondary text-white" data-tab="compare">🔍 Compare</button>
-<button class="btn btn-sm btn-outline-secondary text-white" data-tab="photos">📸 Photos</button>
+{% if f == 'all' or f == trend %}
+<div class="card s-card" style="border-left:4px solid {{ color }}">
+<div class="d-flex justify-content-between align-items-start">
+<div style="flex:1;min-width:0;padding-right:8px">
+<div class="fw-bold text-white" style="font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ se.date[:10] }}</div>
+<div class="text-secondary small" style="font-size:10px">{{ se.weight }}kg · {% if se.body_fat %}BF:{{ se.body_fat }}%{% endif %}{% if se.waist %} · Waist:{{ se.waist }}cm{% endif %}</div>
 </div>
+<div class="s-badge" style="background:{{ color }}22;color:{{ color }};border:1px solid {{ color }}44">{{ badge }}</div>
 </div>
-
-<div id="tab-chart">
-<div class="card p-2">
-<div style="height:220px"><canvas id="pChart"></canvas></div>
+{% if prev_se and prev_se.weight %}
+<div class="d-flex gap-2 mt-1 small text-secondary" style="font-size:10px">
+📊 Prev: {{ prev_se.weight }}kg · {% if se.body_fat and prev_se.body_fat %}BF {{ '↓' if se.body_fat < prev_se.body_fat else '↑' }}{{ (se.body_fat - prev_se.body_fat)|abs|round(1) }}%{% endif %}
 </div>
+{% endif %}
 </div>
-
-<div id="tab-compare" style="display:none">
-<div class="card p-2">
-<div class="title-sm">🔍 Pick 2 Dates to Compare</div>
-<div class="row g-1">
-<div class="col-6"><select id="cmp1" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;font-size:12px;width:100%" onchange="doCompare()">
-<option value="">Date 1</option>
-{% for s in sessions %}<option value="{{ s.id }}">{{ s.date[:10] }} - {{ s.weight }}kg</option>{% endfor %}
-</select></div>
-<div class="col-6"><select id="cmp2" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;font-size:12px;width:100%" onchange="doCompare()">
-<option value="">Date 2</option>
-{% for s in sessions %}<option value="{{ s.id }}">{{ s.date[:10] }} - {{ s.weight }}kg</option>{% endfor %}
-</select></div>
-</div>
-<div id="cmp-result" class="mt-1"></div>
-</div>
-</div>
-
-<div id="tab-photos" style="display:none">
-<div class="card p-2">
-{% if photos %}<div class="photo-g">
-{% for p in photos %}<div><img src="{{ url_for('uploaded_file',filename=p.filename) }}"><div class="text-center text-secondary" style="font-size:9px">{{ p.date[:10] }} · {{ p.angle }}</div></div>
+{% endif %}
+{% else %}
+<div class="card p-4 text-center"><p class="text-secondary mb-0">No measurements yet.</p></div>
 {% endfor %}
-</div>{% else %}<p class="text-secondary mb-0 text-center">No photos yet</p>{% endif %}
+
 </div>
-</div>
-
-</div><!-- container -->
-
-<script>
-let sessionsJson = {{ sessions_json }};
-let chartData = {{ chart_json }};
-let pChart = null;
-let hint = document.getElementById('chart-hint');
-
-// Tab switching
-document.getElementById('main-tabs').addEventListener('click', function(e){
-  var btn = e.target.closest('button');
-  if(!btn) return;
-  var t = btn.getAttribute('data-tab');
-  document.querySelectorAll('#main-tabs button').forEach(function(b){b.className='btn btn-sm btn-outline-secondary text-white';});
-  btn.className='btn btn-sm gold-bg';
-  ['chart','compare','photos'].forEach(function(x){
-    var el = document.getElementById('tab-'+x);
-    if(el) el.style.display = (x==t) ? 'block' : 'none';
-  });
-  if(t=='chart') setTimeout(renderPChart,200);
-});
-
-// Chart
-function renderPChart(){
-  if(!chartData||chartData.length<2) return;
-  var ctx=document.getElementById('pChart'); if(!ctx) return;
-  if(pChart) pChart.destroy();
-  var C={w:'#f0d07a',f:'#ff6b6b',wa:'#4ec97e',h:'#00b4d8',a:'#c98a3a',v:'#ff8c00',m:'#a78bfa'};
-  pChart=new Chart(ctx,{type:'line',data:{labels:chartData.map(function(d){return d.date.slice(5);}),
-    datasets:[
-      {label:'Weight (kg)',data:chartData.map(function(d){return d.weight;}),borderColor:C.w,backgroundColor:C.w+'44',fill:true,tension:.4,pointRadius:5},
-      {label:'Body Fat %',data:chartData.map(function(d){return d.body_fat;}),borderColor:C.f,backgroundColor:C.f+'44',fill:true,tension:.4,pointRadius:5,hidden:true},
-      {label:'Waist (cm)',data:chartData.map(function(d){return d.waist;}),borderColor:C.wa,backgroundColor:C.wa+'44',fill:true,tension:.4,pointRadius:5,hidden:true},
-      {label:'Hip (cm)',data:chartData.map(function(d){return d.hip;}),borderColor:C.h,backgroundColor:C.h+'44',fill:true,tension:.4,pointRadius:5,hidden:true},
-      {label:'Visceral',data:chartData.map(function(d){return d.visceral_fat;}),borderColor:C.v,backgroundColor:C.v+'44',fill:true,tension:.4,pointRadius:5,hidden:true},
-      {label:'Muscle %',data:chartData.map(function(d){return d.muscle_mass;}),borderColor:C.m,backgroundColor:C.m+'44',fill:true,tension:.4,pointRadius:5,hidden:true}
-    ]},
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:true,position:'bottom',labels:{color:'#ccc',font:{size:9},boxWidth:10,padding:6}}},
-      scales:{x:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}},y:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}}},
-      interaction:{mode:'index',intersect:false}
-    }});
-}
-setTimeout(renderPChart,300);
-
-// Compare
-function findSession(id){return sessionsJson.find(function(s){return s.id==id;});}
-
-function doCompare(){
-  var id1=document.getElementById('cmp1').value;
-  var id2=document.getElementById('cmp2').value;
-  var r=document.getElementById('cmp-result');
-  if(!id1||!id2||id1==id2){r.innerHTML='<div class="text-secondary small">Select two different dates</div>';return;}
-  var s1=findSession(id1),s2=findSession(id2);
-  if(!s1||!s2){r.innerHTML='<div class="text-danger small">Not found</div>';return;}
-  var fields=[
-    {l:'Weight',k:'weight',u:'kg',r:1,less:true},
-    {l:'Body Fat',k:'body_fat',u:'%',r:1,less:true},
-    {l:'Visceral',k:'visceral_fat',u:'',r:0,less:true},
-    {l:'Waist',k:'waist',u:'cm',r:0,less:true},
-    {l:'Hip',k:'hip',u:'cm',r:0,less:true},
-    {l:'BMR',k:'bmr',u:'',r:0,less:false},
-    {l:'Muscle %',k:'muscle_mass',u:'%',r:1,less:false}
-  ];
-  var html='<table style="width:100%;font-size:11px;border-collapse:collapse">';
-  html+='<tr style="border-bottom:1px solid #333"><td style="padding:4px;color:#8a8a9a">Metric</td><td style="padding:4px;text-align:center;color:#f0d07a">'+s1.date.slice(0,10)+'</td><td style="padding:4px;text-align:center;color:#f0d07a">'+s2.date.slice(0,10)+'</td><td style="padding:4px;text-align:center">Change</td></tr>';
-  fields.forEach(function(f){
-    var v1=s1[f.k],v2=s2[f.k];
-    if(v1==null||v2==null)return;
-    v1=Number(v1).toFixed(f.r);v2=Number(v2).toFixed(f.r);
-    var diff=(v2-v1).toFixed(f.r);
-    var good=f.less?(diff<0):(diff>0);
-    var color=diff==0?'#f0d07a':(good?'#4ec97e':'#ff6b6b');
-    var icon=diff==0?'➡️':(good?'🟢':'🔴');
-    html+='<tr style="border-bottom:1px solid #252540"><td style="padding:4px;color:#ccc">'+f.l+'</td><td style="padding:4px;text-align:center;color:#fff">'+v1+f.u+'</td><td style="padding:4px;text-align:center;color:#fff">'+v2+f.u+'</td><td style="padding:4px;text-align:center;color:'+color+'">'+icon+' '+(diff>0?'+':'')+diff+f.u+'</td></tr>';
-  });
-  html+='</table>';
-  r.innerHTML=html;
-}
-</script>
 </body></html>
