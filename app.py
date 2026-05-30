@@ -158,6 +158,11 @@ def login():
                 try:
                     match = _check_pw(pw_hash, p)
                     debug += f', Match={match}'
+                    if not match:
+                        parts = pw_hash.split('$')
+                        if len(parts) == 3:
+                            test_h = hashlib.sha256((parts[1] + p).encode()).hexdigest()
+                            debug += f', calc={test_h[:8]}... target={parts[2][:8]}...'
                 except Exception as e:
                     debug += f', CheckErr={e}'
             if match:
