@@ -220,6 +220,27 @@ def add_session(cid):
     return redirect(url_for('client_detail',cid=cid))
 
 # ===== DELETE SESSION =====
+@app.route('/coach/session_edit/<int:sid>/<int:cid>', methods=['GET','POST'])
+def edit_session(sid, cid):
+    if not require_coach(): return redirect(url_for('login'))
+    conn = get_db()
+    if request.method == 'POST':
+        d = request.form
+        def _f(v, d=0.0):
+            try: return float(v) if v else d
+            except: return d
+        _exec(conn, "UPDATE sessions SET date=?,weight=?,body_fat=?,visceral_fat=?,muscle_mass=?,bmr=?,body_age=?,waist=?,abdomen=?,hip=?,thigh=?,notes=? WHERE id=? AND client_id=?",
+              [d.get('date',date.today().isoformat()), _f(d.get('weight')), _f(d.get('body_fat')), _f(d.get('visceral_fat')),
+               _f(d.get('muscle_mass')), _f(d.get('bmr')), _f(d.get('body_age')), _f(d.get('waist')), _f(d.get('abdomen')), _f(d.get('hip')), _f(d.get('thigh')), d.get('notes',''), sid, cid])
+        conn.commit(); conn.close()
+        return redirect(url_for('client_detail',cid=cid))
+    # GET: render edit page
+    session_data = _exec(conn, "SELECT * FROM sessions WHERE id=? AND client_id=?", [sid, cid]).fetchone()
+    client = _exec(conn, "SELECT * FROM clients WHERE id=?", [cid]).fetchone()
+    conn.close()
+    if not session_data: return redirect(url_for('client_detail',cid=cid))
+    return render_template('edit_session.html',session=session_data,client=client,today=date.today().isoformat())
+
 @app.route('/coach/session_delete/<int:sid>/<int:cid>', methods=['POST'])
 def delete_session(sid, cid):
     if not require_coach(): return redirect(url_for('login'))
