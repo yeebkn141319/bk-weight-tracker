@@ -13,7 +13,7 @@ ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif','webp'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ===== DATABASE ABSTRACTION (SQLite local / PostgreSQL on Render) =====
-_HARDCODED_DB = 'postgresql://weight_tracker_db_xrw7_user:zpaPQXZwd40tO2dIUGNtxwTCakvYJx43@dpg-d8dckcmk1jcs738s2lvg-a.singapore-postgres.render.com/weight_tracker_db_xrw7'
+_HARDCODED_DB = 'postgresql://weight_tracker_db_xrw7_user:zpaPQXZwd40tO2dIUGNtxwTCakvYJx43@dpg-d8dckcmk1jcs738s2lvg-a/weight_tracker_db_xrw7'
 _DB_URL = os.environ.get('DATABASE_URL', '') or _HARDCODED_DB
 
 PG = _DB_URL.strip() != ''
