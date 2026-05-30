@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
+import werkzeug
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, date, timedelta
@@ -137,13 +138,11 @@ def login():
             conn = get_db()
             c = _exec(conn, "SELECT * FROM coach WHERE username=?", [u]).fetchone()
             conn.close()
-            import traceback
-            debug = f'User={u}, Found={c is not None}'
+            debug = f'User={u}, Found={c is not None}, WZ={werkzeug.__version__}'
             if c:
                 pw_hash = c['password']
-                debug += f', Hash={pw_hash[:20]}...'
+                debug += f', Hash={pw_hash[:25]}...'
                 try:
-                    from werkzeug.security import check_password_hash
                     match = check_password_hash(pw_hash, p)
                     debug += f', Match={match}'
                 except Exception as e:
