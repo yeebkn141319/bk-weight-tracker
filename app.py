@@ -282,7 +282,7 @@ def client_view():
     photos = _exec(conn, "SELECT * FROM photos WHERE client_id=? ORDER BY date DESC", [cid]).fetchall()
     chart_rows = _exec(conn, "SELECT date,weight,body_fat,waist,hip,visceral_fat,muscle_mass,bmr,body_age FROM sessions WHERE client_id=? ORDER BY date ASC", [cid]).fetchall()
     conn.close()
-    return render_template('client.html',client=client,sessions=sessions,photos=photos,chart_json=json.dumps([dict(r) for r in chart_rows]))
+    return render_template('client.html',client=client,sessions=sessions,photos=photos,chart_json=json.dumps([dict(r) for r in chart_rows]),sessions_json=json.dumps([dict(r) for r in sessions]))
 
 # ===== API =====
 @app.route('/api/chart/<int:cid>')

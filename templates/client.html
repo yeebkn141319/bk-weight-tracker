@@ -118,6 +118,7 @@
 
 <div class="tab">
 <button class="act" onclick="ctb('chart')" id="tc-chart">📈 Progress</button>
+<button onclick="ctb('compare')" id="tc-compare">🔍 Compare</button>
 <button onclick="ctb('photos')" id="tc-photos">📸 Photos</button>
 <button onclick="ctb('history')" id="tc-history">📋 History</button>
 </div>
@@ -135,6 +136,27 @@
 </div>
 <div style="position:relative;height:260px"><canvas id="pChart"></canvas></div>
 <div class="mt-2 small text-secondary text-center" id="chart-hint">⬆️ Tap buttons to switch view</div>
+</div>
+</div>
+
+<div id="tab-compare" style="display:none">
+<div class="card p-3">
+<div class="title-sm">🔍 Compare Any 2 Sessions</div>
+<div class="row g-2 mb-2">
+<div class="col-6">
+<select class="form-select" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;font-size:13px" id="cmp1" onchange="doCompare()">
+<option value="">Select date 1</option>
+{% for s in sessions %}<option value="{{ s.id }}">{{ s.date|fmt_date }}</option>{% endfor %}
+</select>
+</div>
+<div class="col-6">
+<select class="form-select" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;font-size:13px" id="cmp2" onchange="doCompare()">
+<option value="">Select date 2</option>
+{% for s in sessions %}<option value="{{ s.id }}">{{ s.date|fmt_date }}</option>{% endfor %}
+</select>
+</div>
+</div>
+<div id="cmp-result"></div>
 </div>
 </div>
 
@@ -163,6 +185,7 @@
 </div>
 
 <script>
+let sessionsJson = {{ sessions_json }}
 let pChart=null;
 let chartData={{ chart_json }};
 let hint=document.getElementById('chart-hint');
@@ -213,8 +236,46 @@ function csw(m){
 function ctb(t){
   document.querySelectorAll('.tab button').forEach(b=>b.classList.remove('act'));
   document.getElementById('tc-'+t).classList.add('act');
-  ['chart','photos','history'].forEach(x=>document.getElementById('tab-'+x).style.display=x==t?'block':'none');
+  ['chart','compare','photos','history'].forEach(x=>document.getElementById('tab-'+x).style.display=x==t?'block':'none');
   if(t==='chart')setTimeout(renderPChart,200);
+}
+
+function findSession(id){return sessionsJson.find(s=>s.id==id)}
+
+function doCompare(){
+  var id1=document.getElementById('cmp1').value;
+  var id2=document.getElementById('cmp2').value;
+  var r=document.getElementById('cmp-result');
+  if(!id1||!id2||id1==id2){r.innerHTML='<div class="text-secondary small mt-2">Select two different dates to compare</div>';return}
+  var s1=findSession(id1),s2=findSession(id2);
+  if(!s1||!s2){r.innerHTML='<div class="text-danger small">Session not found</div>';return}
+  var fields=[
+    {l:'Weight (kg)',k1:'weight',k2:'weight',less:true,unit:'kg',r:1},
+    {l:'Body Fat %',k1:'body_fat',k2:'body_fat',less:true,unit:'%',r:1},
+    {l:'Visceral Fat',k1:'visceral_fat',k2:'visceral_fat',less:true,unit:'',r:0},
+    {l:'Muscle %',k1:'muscle_mass',k2:'muscle_mass',less:false,unit:'%',r:1},
+    {l:'Waist (cm)',k1:'waist',k2:'waist',less:true,unit:'cm',r:0},
+    {l:'Hip (cm)',k1:'hip',k2:'hip',less:true,unit:'cm',r:0},
+    {l:'BMR',k1:'bmr',k2:'bmr',less:false,unit:'',r:0},
+    {l:'Body Age',k1:'body_age',k2:'body_age',less:true,unit:'yr',r:0}
+  ];
+  var html='<div class="card p-2 mt-2" style="background:#1a1a2e"><table style="width:100%;font-size:12px;border-collapse:collapse">';
+  html+='<tr style="border-bottom:1px solid #333"><td style="padding:6px 4px;color:#8a8a9a">Metric</td><td style="padding:6px 4px;text-align:center;color:#f0d07a">'+s1.date.slice(0,10)+'</td><td style="padding:6px 4px;text-align:center;color:#f0d07a">'+s2.date.slice(0,10)+'</td><td style="padding:6px 4px;text-align:center">Change</td></tr>';
+  fields.forEach(function(f){
+    var v1=s1[f.k1],v2=s2[f.k2];
+    if(v1==null||v2==null)return;
+    v1=Number(v1).toFixed(f.r);v2=Number(v2).toFixed(f.r);
+    var diff=(v2-v1).toFixed(f.r);
+    var good=f.less?(diff<0):(diff>0);
+    var color=diff==0?'#f0d07a':(good?'#4ec97e':'#ff6b6b');
+    var icon=diff==0?'➡️':(good?'🟢':'🔴');
+    html+='<tr style="border-bottom:1px solid #252540"><td style="padding:5px 4px;color:#ccc">'+f.l+'</td>';
+    html+='<td style="padding:5px 4px;text-align:center;color:#fff">'+v1+f.unit+'</td>';
+    html+='<td style="padding:5px 4px;text-align:center;color:#fff">'+v2+f.unit+'</td>';
+    html+='<td style="padding:5px 4px;text-align:center;color:'+color+'">'+icon+' '+(diff>0?'+':'')+diff+f.unit+'</td></tr>';
+  });
+  html+='</table></div>';
+  r.innerHTML=html;
 }
 setTimeout(renderPChart,300);
 </script>
