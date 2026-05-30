@@ -334,6 +334,19 @@ def api_chart(cid):
     conn.close()
     return jsonify([dict(d) for d in data])
 
+@app.route('/_dbcheck')
+def db_check():
+    status = f'PG mode: {PG}\nDB_URL set: {bool(_DB_URL)}\nDB_URL prefix: {_DB_URL[:20]}...\n'
+    try:
+        conn = get_db()
+        cur = _exec(conn, "SELECT username FROM coach")
+        coaches = [r['username'] for r in cur.fetchall()]
+        conn.close()
+        status += f'Coaches: {coaches}\nDB OK'
+    except Exception as e:
+        status += f'DB Error: {e}'
+    return f'<pre>{status}</pre>'
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'],filename)
