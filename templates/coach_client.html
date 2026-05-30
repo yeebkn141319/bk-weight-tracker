@@ -1,0 +1,177 @@
+<!DOCTYPE html><html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>{{ client.name }} - BK Tracker</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{background:#0f0f1e;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding-bottom:40px}
+.gold{color:#c98a3a}
+.gold-bg{background:#c98a3a;border:none;color:#fff}
+.gold-bg:hover{background:#a06d2a;color:#fff}
+.card{background:#1a1a2e;border:none;border-radius:16px;margin-bottom:10px}
+.section-title{font-size:13px;color:#c98a3a;font-weight:600;margin-bottom:8px}
+.stat{background:#252540;border-radius:10px;padding:8px;text-align:center;flex:1;min-width:65px}
+.stat-lbl{font-size:9px;color:#8a8a9a;text-transform:uppercase}
+.stat-val{font-size:14px;font-weight:700;color:#f0d07a}
+input,select{background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:10px;width:100%;font-size:13px}
+input:focus{outline:none;border-color:#c98a3a}
+.tab-bar{display:flex;background:#1a1a2e;border-radius:12px;padding:4px;margin-bottom:10px}
+.tab-bar button{flex:1;padding:8px 4px;border:none;background:transparent;color:#8a8a9a;font-size:12px;border-radius:10px;cursor:pointer}
+.tab-bar button.active{background:#c98a3a;color:#fff}
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.photo-grid img{width:100%;border-radius:10px}
+.photo-grid .cap{font-size:10px;color:#8a8a9a;text-align:center}
+.log-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #252540;font-size:13px}
+.log-row:last-child{border:none}
+@media(min-width:768px){.container{max-width:600px;margin:0 auto;padding:16px}}
+@media(min-width:1024px){.container{max-width:800px;margin:0 auto;padding:24px}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="d-flex align-items-center mb-3">
+<a href="{{ url_for('coach_dashboard') }}" class="text-secondary text-decoration-none me-2" style="font-size:20px">←</a>
+<div class="flex-fill"><h5 class="gold mb-0">{{ client.name }}</h5><small class="text-secondary">{{ client.phone }}</small></div>
+{% if client.goal_weight > 0 %}
+<div class="text-end"><small class="stat-lbl">Goal</small><div class="fw-bold gold">{{ client.goal_weight }}kg</div></div>
+{% endif %}
+</div>
+
+{% set m = measurements[0] if measurements else None %}
+{% if m %}
+<div class="card p-3">
+<div class="section-title">📊 {{ m.date | format_date }}</div>
+<div class="d-flex flex-wrap gap-1 mb-2">
+<div class="stat"><div class="stat-lbl">Weight</div><div class="stat-val">{{ m.weight }}kg</div></div>
+<div class="stat"><div class="stat-lbl">Body Fat</div><div class="stat-val">{{ m.body_fat }}%</div></div>
+<div class="stat"><div class="stat-lbl">Visceral</div><div class="stat-val">{{ m.visceral_fat }}</div></div>
+<div class="stat"><div class="stat-lbl">Muscle</div><div class="stat-val">{{ m.muscle_mass }}kg</div></div>
+<div class="stat"><div class="stat-lbl">BMR</div><div class="stat-val">{{ m.bmr }}</div></div>
+</div>
+<div class="d-flex flex-wrap gap-1">
+<div class="stat"><div class="stat-lbl">Waist</div><div class="stat-val">{{ m.waist }}cm</div></div>
+<div class="stat"><div class="stat-lbl">Abdomen</div><div class="stat-val">{{ m.abdomen }}cm</div></div>
+<div class="stat"><div class="stat-lbl">Hip</div><div class="stat-val">{{ m.hip }}cm</div></div>
+<div class="stat"><div class="stat-lbl">Thigh</div><div class="stat-val">{{ m.thigh }}cm</div></div>
+</div>
+</div>
+{% else %}<div class="card p-4 text-center"><p class="text-secondary mb-0">No measurements yet</p></div>{% endif %}
+
+<!-- Tabs -->
+<div class="tab-bar">
+<button class="active" onclick="switchTab('measure')" id="tb-measure">➕ Add</button>
+<button onclick="switchTab('chart')" id="tb-chart">📈 Chart</button>
+<button onclick="switchTab('photo')" id="tb-photo">📸 Photo</button>
+<button onclick="switchTab('history')" id="tb-history">📋 Logs</button>
+</div>
+
+<div id="tab-measure" class="tab-content">
+<div class="card p-3">
+<div class="section-title">Add Measurement</div>
+<form method="POST" action="{{ url_for('add_measurement', client_id=client.id) }}">
+<input type="date" name="date" value="{{ today }}">
+<div class="row g-1">
+<div class="col-4"><input type="number" name="weight" step="0.1" placeholder="Weight (kg)"></div>
+<div class="col-4"><input type="number" name="body_fat" step="0.1" placeholder="Body Fat %"></div>
+<div class="col-4"><input type="number" name="visceral_fat" step="0.1" placeholder="Visceral"></div>
+</div>
+<div class="row g-1">
+<div class="col-4"><input type="number" name="muscle_mass" step="0.1" placeholder="Muscle (kg)"></div>
+<div class="col-4"><input type="number" name="bmr" placeholder="BMR"></div>
+<div class="col-4"><input type="number" name="waist" step="0.1" placeholder="Waist (cm)"></div>
+</div>
+<div class="row g-1">
+<div class="col-4"><input type="number" name="abdomen" step="0.1" placeholder="Abdomen (cm)"></div>
+<div class="col-4"><input type="number" name="hip" step="0.1" placeholder="Hip (cm)"></div>
+<div class="col-4"><input type="number" name="thigh" step="0.1" placeholder="Thigh (cm)"></div>
+</div>
+<div class="mb-2"><input type="text" name="notes" placeholder="Notes"></div>
+<button type="submit" class="btn gold-bg w-100 py-2 fw-bold">Save Measurement</button>
+</form>
+</div>
+</div>
+
+<div id="tab-chart" class="tab-content" style="display:none">
+<div class="card p-3">
+<div class="d-flex gap-2 mb-2 flex-wrap">
+<button class="btn btn-sm gold-bg" onclick="switchMetric('weight')">Weight</button>
+<button class="btn btn-sm btn-outline-secondary text-white" onclick="switchMetric('bodyfat')">Body Fat</button>
+<button class="btn btn-sm btn-outline-secondary text-white" onclick="switchMetric('size')">Size</button>
+</div>
+<canvas id="coachChart" height="220"></canvas>
+</div>
+</div>
+
+<div id="tab-photo" class="tab-content" style="display:none">
+<div class="card p-3">
+<div class="section-title">Upload Photo</div>
+<form method="POST" action="{{ url_for('upload_photo', client_id=client.id) }}" enctype="multipart/form-data">
+<input type="date" name="date" value="{{ today }}">
+<select name="angle"><option value="front">Front</option><option value="side">Side</option><option value="back">Back</option></select>
+<input type="file" name="photo" accept="image/*" required>
+<button type="submit" class="btn gold-bg w-100 py-2 fw-bold mt-2">Upload</button>
+</form>
+</div>
+{% if photos %}
+<div class="section-title">📸 Progress Photos</div>
+<div class="photo-grid">
+{% for p in photos %}
+<div><img src="{{ url_for('uploaded_file', filename=p.filename) }}"><div class="cap">{{ p.date | format_date }} · {{ p.angle }}</div></div>
+{% endfor %}
+</div>
+{% endif %}
+</div>
+
+<div id="tab-history" class="tab-content" style="display:none">
+{% for m in measurements %}
+<div class="log-row">
+<span class="text-secondary">{{ m.date | format_date }}</span>
+<span class="gold fw-bold">{{ m.weight }}kg</span>
+<span class="text-secondary">{% if m.body_fat %}BF:{{ m.body_fat }}%{% endif %} {% if m.waist %}W:{{ m.waist }}cm{% endif %}</span>
+</div>
+{% endfor %}
+</div>
+</div>
+
+<script>
+function switchTab(tab) {
+document.querySelectorAll('.tab-bar button').forEach(b=>b.classList.remove('active'));
+document.getElementById('tb-'+tab).classList.add('active');
+document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
+document.getElementById('tab-'+tab).style.display='block';
+if(tab === 'chart') setTimeout(renderChart,200);
+}
+
+let chartInst = null;
+async function renderChart() {
+let resp = await fetch('/api/chart-data/{{ client.id }}');
+let data = await resp.json();
+if(!data||data.length<2) return;
+let ctx = document.getElementById('coachChart');
+if(!ctx) return;
+if(chartInst) chartInst.destroy();
+chartInst = new Chart(ctx, {
+type:'line',
+data:{labels:data.map(d=>d.date.slice(5)),
+datasets:[
+{label:'Weight (kg)',data:data.map(d=>d.weight),borderColor:'#c98a3a',backgroundColor:'#c98a3a22',fill:true,tension:.3,pointRadius:4},
+{label:'Body Fat %',data:data.map(d=>d.body_fat),borderColor:'#ff6b6b',backgroundColor:'#ff6b6b22',fill:true,tension:.3,pointRadius:4,hidden:true},
+{label:'Waist (cm)',data:data.map(d=>d.waist),borderColor:'#4ec97e',backgroundColor:'#4ec97e22',fill:true,tension:.3,pointRadius:4,hidden:true},
+{label:'Hip (cm)',data:data.map(d=>d.hip),borderColor:'#00b4d8',backgroundColor:'#00b4d822',fill:true,tension:.3,pointRadius:4,hidden:true}
+]},
+options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#fff',font:{size:10}}}},
+scales:{x:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}},
+y:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}}}}});
+}
+
+function switchMetric(m) {
+document.querySelectorAll('#tab-chart .btn').forEach(b=>b.className='btn btn-sm btn-outline-secondary text-white');
+if(m==='weight'){document.querySelector('#tab-chart .btn').className='btn btn-sm gold-bg';chartInst.data.datasets.forEach((d,i)=>d.hidden=i!==0)}
+else if(m==='bodyfat'){document.querySelectorAll('#tab-chart .btn')[1].className='btn btn-sm gold-bg';chartInst.data.datasets.forEach((d,i)=>d.hidden=i!==1)}
+else{document.querySelectorAll('#tab-chart .btn')[2].className='btn btn-sm gold-bg';chartInst.data.datasets.forEach((d,i)=>d.hidden=i<2||i>2)}
+chartInst.update();
+}
+</script>
+</body>
+</html>

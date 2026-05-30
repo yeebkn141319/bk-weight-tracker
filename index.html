@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BK Weight Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f0f1e; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh; }
+.container { max-width: 480px; margin: 0 auto; padding: 12px; }
+.hide { display: none !important; }
+
+/* Header */
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.header h1 { font-size: 22px; color: #c98a3a; }
+.header .sub { font-size: 12px; color: #8a8a9a; }
+
+/* Cards */
+.card { background: #1a1a2e; border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+.section-title { font-size: 14px; color: #c98a3a; font-weight: 600; margin-bottom: 10px; }
+
+/* Stats grid */
+.stats-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.stat { background: #252540; border-radius: 12px; padding: 10px 8px; text-align: center; flex: 1; min-width: 60px; }
+.stat-lbl { font-size: 9px; color: #8a8a9a; text-transform: uppercase; letter-spacing: 0.3px; }
+.stat-val { font-size: 15px; font-weight: 700; color: #f0d07a; margin-top: 2px; }
+
+/* Tabs */
+.tab-bar { display: flex; background: #1a1a2e; border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+.tab-bar button { flex: 1; padding: 10px 6px; border: none; background: transparent; color: #8a8a9a; font-size: 12px; border-radius: 10px; cursor: pointer; }
+.tab-bar button.active { background: #c98a3a; color: #fff; }
+
+/* Buttons */
+.btn { background: #c98a3a; color: #fff; border: none; border-radius: 10px; padding: 12px 20px; font-size: 14px; font-weight: 600; width: 100%; cursor: pointer; }
+.btn-sm { padding: 8px 14px; font-size: 12px; width: auto; }
+.btn-outline { background: transparent; border: 1px solid #333; color: #fff; }
+.btn-outline.active { background: #c98a3a; border-color: #c98a3a; }
+
+/* Inputs */
+input, select { background: #252540; border: 1px solid #333; color: #fff; border-radius: 10px; padding: 12px; font-size: 14px; width: 100%; margin-bottom: 8px; }
+input:focus, select:focus { outline: none; border-color: #c98a3a; }
+input::placeholder { color: #666; }
+.form-row { display: flex; gap: 8px; }
+.form-row input, .form-row select { flex: 1; }
+
+/* Logs */
+.log-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #252540; font-size: 13px; }
+.log-item:last-child { border-bottom: none; }
+
+/* Photos */
+.photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.photo-grid img { width: 100%; border-radius: 10px; }
+.photo-grid .cap { font-size: 11px; color: #8a8a9a; text-align: center; margin-top: 4px; }
+
+/* Chart tab buttons */
+.chart-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.chart-tabs button { padding: 6px 12px; border-radius: 8px; border: 1px solid #333; background: #252540; color: #fff; font-size: 12px; cursor: pointer; }
+.chart-tabs button.active { background: #c98a3a; border-color: #c98a3a; }
+
+/* Client list */
+.client-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #252540; border-radius: 12px; margin-bottom: 8px; cursor: pointer; }
+.client-item:hover { background: #2a2a48; }
+.client-name { font-size: 16px; font-weight: 600; }
+.client-meta { font-size: 12px; color: #8a8a9a; }
+
+/* Mode switch */
+.mode-switch { text-align: center; margin: 16px 0; }
+.mode-switch a { color: #8a8a9a; font-size: 13px; cursor: pointer; text-decoration: underline; }
+
+/* Goal bar */
+.goal-bar { height: 6px; background: #252540; border-radius: 3px; margin: 8px 0; overflow: hidden; }
+.goal-fill { height: 100%; background: #c98a3a; border-radius: 3px; transition: width 0.3s; }
+
+/* Coach view */
+.coach-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.coach-header h2 { color: #c98a3a; font-size: 18px; }
+.client-detail-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+.client-detail-header .back { color: #8a8a9a; cursor: pointer; font-size: 18px; }
+.client-detail-header h2 { flex: 1; font-size: 20px; color: #c98a3a; }
+
+/* Photo upload preview */
+.preview-img { max-width: 100%; border-radius: 10px; margin-top: 8px; display: none; }
+</style>
+</head>
+<body>
+
+<div id="app" class="container"></div>
+
+<script>
+// ========== DATA LAYER ==========
+const DB_KEY = 'bk_weight_tracker';
+const COACH_PASS = 'admin123';
+
+let state = loadState();
+
+function loadState() {
+    try {
+        const raw = localStorage.getItem(DB_KEY);
+        if (raw) {
+            const data = JSON.parse(raw);
+            // Ensure all fields
+            if (!data.coach) data.coach = { name: 'BK', password: COACH_PASS };
+            if (!data.clients) data.clients = [];
+            return data;
+        }
+    } catch(e) {}
+    return { coach: { name: 'BK', password: COACH_PASS }, clients: [] };
+}
+
+function saveState() {
+    localStorage.setItem(DB_KEY, JSON.stringify(state));
+}
+
+function today() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function formatDate(d) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const parts = d.split('-');
+    return `${parts[2]} ${months[parseInt(parts[1])-1]} ${parts[0]}`;
+}
+
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+// ========== AUTH ==========
+let currentUser = null; // { role: 'coach' | 'client', clientId?: string }
+
+function loginCoach(pw) {
+    if (pw === state.coach.password) {
+        currentUser = { role: 'coach' };
+        saveState();
+        return true;
+    }
+    return false;
+}
+
+function loginClient(phone, pw) {
+    const client = state.clients.find(c => c.phone === phone && c.password === pw);
+    if (client) {
+        currentUser = { role: 'client', clientId: client.id };
+        return true;
+    }
+    return false;
+}
+
+// ========== HELPERS ==========
+function getClient(id) { return state.clients.find(c => c.id === id); }
+
+function getLatest(client) {
+    if (!client.logs || client.logs.length === 0) return null;
+    return client.logs.sort((a,b) => b.date.localeCompare(a.date))[0];
+}
+
+function getLogs(client) {
+    return (client.logs || []).sort((a,b) => b.date.localeCompare(a.date));
+}
+
+function getSortedLogs(client) {
+    return (client.logs || []).sort((a,b) => a.date.localeCompare(b.date));
+}
+
+// ========== RENDER ==========
+function render(html) {
+    document.getElementById('app').innerHTML = html;
+}
+
+function renderLogin() {
+    render(`
+        <div class="header"><h1>🏋️ BK Weight Tracker</h1></div>
+        <div class="card">
+            <div class="section-title">Coach Login</div>
+            <input type="password" id="coachPw" placeholder="Password" value="admin123">
+            <button class="btn" onclick="handleCoachLogin()">Login as Coach</button>
+        </div>
+        <div class="card">
+            <div class="section-title">Client Login</div>
+            <input type="text" id="clientPhone" placeholder="Phone number">
+            <input type="password" id="clientPw" placeholder="Password">
+            <button class="btn" onclick="handleClientLogin()">Login as Client</button>
+        </div>
+    `);
+}
+
+function handleCoachLogin() {
+    if (loginCoach(document.getElementById('coachPw').value)) {
+        renderCoachDashboard();
+    } else {
+        alert('Wrong password');
+    }
+}
+
+function handleClientLogin() {
+    const phone = document.getElementById('clientPhone').value.trim();
+    const pw = document.getElementById('clientPw').value;
+    if (loginClient(phone, pw)) {
+        renderClientDashboard();
+    } else {
+        alert('Invalid credentials. Ask your coach for your login details.');
+    }
+}
+
+// ========== COACH VIEWS ==========
+function renderCoachDashboard() {
+    const clients = state.clients;
+    const totalLogs = clients.reduce((s,c) => s + (c.logs?.length || 0), 0);
+    const active = clients.filter(c => c.logs?.length > 0).length;
+
+    render(`
+        <div class="header">
+            <div><h1>BK Tracker</h1><div class="sub">Coach: ${state.coach.name}</div></div>
+            <button class="btn btn-sm" onclick="logout()">Logout</button>
+        </div>
+        <div class="card">
+            <div class="stats-grid">
+                <div class="stat"><div class="stat-lbl">Clients</div><div class="stat-val">${clients.length}</div></div>
+                <div class="stat"><div class="stat-lbl">Active</div><div class="stat-val">${active}</div></div>
+                <div class="stat"><div class="stat-lbl">Logs</div><div class="stat-val">${totalLogs}</div></div>
+            </div>
+        </div>
+        <div class="section-title">👥 Clients</div>
+        ${clients.length === 0 ? '<div class="card" style="text-align:center;color:#8a8a9a;">No clients yet</div>' : ''}
+        ${clients.map(c => {
+            const l = getLatest(c);
+            return `<div class="client-item" onclick="renderCoachClientView('${c.id}')">
+                <div>
+                    <div class="client-name">${c.name}</div>
+                    <div class="client-meta">${c.logs?.length || 0} logs · ${c.phone}</div>
+                </div>
+                <div style="text-align:right;">
+                    ${l ? `<div class="stat-val" style="font-size:14px;">${l.weight}kg</div><div class="client-meta">${formatDate(l.date)}</div>` : '<div class="client-meta">No data</div>'}
+                </div>
+            </div>`;
+        }).join('')}
+        <button class="btn" onclick="showAddClient()" style="margin-top:8px;">+ Add Client</button>
+    `);
+}
+
+function showAddClient() {
+    render(`
+        <div class="header">
+            <div><h1>Add Client</h1></div>
+            <button class="btn btn-sm btn-outline" onclick="renderCoachDashboard()">Cancel</button>
+        </div>
+        <div class="card">
+            <input type="text" id="newName" placeholder="Client name *">
+            <input type="text" id="newPhone" placeholder="Phone number (used for login)">
+            <input type="text" id="newPw" placeholder="Password" value="123456">
+            <div class="form-row">
+                <input type="number" id="newGoal" step="0.1" placeholder="Goal weight (kg)">
+                <input type="date" id="newGoalDate">
+            </div>
+            <button class="btn" onclick="addClient()">Add Client</button>
+        </div>
+    `);
+}
+
+function addClient() {
+    const name = document.getElementById('newName').value.trim();
+    const phone = document.getElementById('newPhone').value.trim();
+    const pw = document.getElementById('newPw').value;
+    if (!name) { alert('Name is required'); return; }
+    state.clients.push({
+        id: generateId(),
+        name,
+        phone,
+        password: pw,
+        goalWeight: parseFloat(document.getElementById('newGoal').value) || 0,
+        goalDate: document.getElementById('newGoalDate').value || '',
+        logs: [],
+        photos: [],
+        createdAt: today()
+    });
+    saveState();
+    renderCoachDashboard();
+}
+
+function renderCoachClientView(clientId) {
+    const c = getClient(clientId);
+    if (!c) { renderCoachDashboard(); return; }
+    const l = getLatest(c);
+    const logs = getLogs(c);
+    
+    render(`
+        <div class="client-detail-header">
+            <span class="back" onclick="renderCoachDashboard()">←</span>
+            <h2>${c.name}</h2>
+            <button class="btn btn-sm btn-outline" onclick="logout()">Exit</button>
+        </div>
+        
+        ${c.goalWeight > 0 ? `
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;">
+                <div><small class="stat-lbl">🎯 Goal</small><div class="gold" style="font-weight:600;">${c.goalWeight}kg</div></div>
+                <div class="text-end"><small class="stat-lbl">By</small><div class="gold">${c.goalDate || '—'}</div></div>
+            </div>
+            ${l ? `<div class="goal-bar"><div class="goal-fill" style="width:${Math.min(100, (l.weight/c.goalWeight)*100)}%"></div></div><small class="stat-lbl">${l.weight >= c.goalWeight ? '⏳ On track' : '🎉 Reached goal!'}</small>` : ''}
+        </div>` : ''}
+        
+        ${l ? `
+        <div class="stats-grid">
+            <div class="stat"><div class="stat-lbl">Weight</div><div class="stat-val">${l.weight}kg</div></div>
+            <div class="stat"><div class="stat-lbl">Body Fat</div><div class="stat-val">${l.bodyFat || '-'}%</div></div>
+            <div class="stat"><div class="stat-lbl">Visceral</div><div class="stat-val">${l.visceralFat || '-'}</div></div>
+            <div class="stat"><div class="stat-lbl">Muscle</div><div class="stat-val">${l.muscleMass || '-'}kg</div></div>
+        </div>
+        <div class="stats-grid">
+            <div class="stat"><div class="stat-lbl">Waist</div><div class="stat-val">${l.waist || '-'}cm</div></div>
+            <div class="stat"><div class="stat-lbl">Abdomen</div><div class="stat-val">${l.abdomen || '-'}cm</div></div>
+            <div class="stat"><div class="stat-lbl">Hip</div><div class="stat-val">${l.hip || '-'}cm</div></div>
+            <div class="stat"><div class="stat-lbl">Thigh</div><div class="stat-val">${l.thigh || '-'}cm</div></div>
+        </div>
+        ` : '<div class="card" style="text-align:center;color:#8a8a9a;">No measurements yet</div>'}
+        
+        <!-- Coach add measurement -->
+        <div class="card">
+            <div class="section-title">➕ Add Measurement</div>
+            <input type="date" id="coachDate" value="${today()}">
+            <div class="form-row"><input type="number" id="cWeight" step="0.1" placeholder="Weight (kg)"><input type="number" id="cBodyFat" step="0.1" placeholder="Body Fat %"></div>
+            <div class="form-row"><input type="number" id="cVisceral" step="0.1" placeholder="Visceral Fat"><input type="number" id="cMuscle" step="0.1" placeholder="Muscle (kg)"></div>
+            <div class="form-row"><input type="number" id="cWaist" step="0.1" placeholder="Waist (cm)"><input type="number" id="cAbdomen" step="0.1" placeholder="Abdomen (cm)"></div>
+            <div class="form-row"><input type="number" id="cHip" step="0.1" placeholder="Hip (cm)"><input type="number" id="cThigh" step="0.1" placeholder="Thigh (cm)"></div>
+            <button class="btn" onclick="coachAddLog('${clientId}')">Save</button>
+        </div>
+        
+        <!-- Chart -->
+        <div class="card">
+            <div class="section-title">📈 Progress</div>
+            <div class="chart-tabs">
+                <button class="active" onclick="switchCoachChart('weight','${clientId}')" id="cw-btn">Weight</button>
+                <button onclick="switchCoachChart('bodyfat','${clientId}')" id="cf-btn">Body Fat</button>
+                <button onclick="switchCoachChart('size','${clientId}')" id="cs-btn">Size</button>
+            </div>
+            <canvas id="coachChart" height="200"></canvas>
+        </div>
+        
+        <!-- Photos -->
+        <div class="card">
+            <div class="section-title">📸 Photos</div>
+            ${c.photos && c.photos.length > 0 ? `
+            <div class="photo-grid">
+                ${c.photos.sort((a,b)=>b.date.localeCompare(a.date)).map(p => `
+                <div><img src="${p.data}"><div class="cap">${formatDate(p.date)} · ${p.angle}</div></div>
+                `).join('')}
+            </div>` : '<div style="color:#8a8a9a;font-size:13px;">No photos yet. Clients can upload from their account.</div>'}
+        </div>
+        
+        <!-- History -->
+        <div class="section-title">📋 History</div>
+        ${logs.map(log => `
+        <div class="log-item">
+            <span class="stat-lbl">${formatDate(log.date)}</span>
+            <span class="gold" style="font-weight:600;">${log.weight}kg</span>
+            <span class="stat-lbl">${log.bodyFat ? 'BF:'+log.bodyFat+'%' : ''}</span>
+        </div>
+        `).join('')}
+        
+        <div style="height:60px;"></div>
+    `);
+    
+    // Render chart after element exists
+    setTimeout(() => renderCoachChart(clientId, 'weight'), 100);
+}
+
+function coachAddLog(clientId) {
+    const c = getClient(clientId);
+    if (!c) return;
+    if (!c.logs) c.logs = [];
+    c.logs.push({
+        id: generateId(),
+        date: document.getElementById('coachDate').value || today(),
+        weight: parseFloat(document.getElementById('cWeight').value) || 0,
+        bodyFat: parseFloat(document.getElementById('cBodyFat').value) || 0,
+        visceralFat: parseFloat(document.getElementById('cVisceral').value) || 0,
+        muscleMass: parseFloat(document.getElementById('cMuscle').value) || 0,
+        waist: parseFloat(document.getElementById('cWaist').value) || 0,
+        abdomen: parseFloat(document.getElementById('cAbdomen').value) || 0,
+        hip: parseFloat(document.getElementById('cHip').value) || 0,
+        thigh: parseFloat(document.getElementById('cThigh').value) || 0
+    });
+    saveState();
+    renderCoachClientView(clientId);
+}
+
+let coachChartInstance = null;
+
+function renderCoachChart(clientId, metric) {
+    const c = getClient(clientId);
+    if (!c || !c.logs || c.logs.length < 2) return;
+    const sorted = getSortedLogs(c);
+    const labels = sorted.map(l => l.date.slice(5));
+    
+    let datasets = [];
+    if (metric === 'weight') {
+        datasets = [{ label: 'Weight (kg)', data: sorted.map(l=>l.weight), borderColor: '#c98a3a', backgroundColor: '#c98a3a22', fill: true, tension: 0.3, pointRadius: 4 }];
+    } else if (metric === 'bodyfat') {
+        datasets = [{ label: 'Body Fat %', data: sorted.map(l=>l.bodyFat || null), borderColor: '#ff6b6b', backgroundColor: '#ff6b6b22', fill: true, tension: 0.3, pointRadius: 4 }];
+    } else {
+        datasets = [
+            { label: 'Waist (cm)', data: sorted.map(l=>l.waist || null), borderColor: '#4ec97e', fill: true, tension: 0.3, pointRadius: 4 },
+            { label: 'Hip (cm)', data: sorted.map(l=>l.hip || null), borderColor: '#00b4d8', fill: true, tension: 0.3, pointRadius: 4 }
+        ];
+    }
+    
+    const ctx = document.getElementById('coachChart');
+    if (!ctx) return;
+    if (coachChartInstance) coachChartInstance.destroy();
+    
+    coachChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#fff', font: {size: 10} } } },
+            scales: {
+                x: { ticks: { color: '#8a8a9a', font: {size: 9} }, grid: { color: '#252540' } },
+                y: { ticks: { color: '#8a8a9a', font: {size: 9} }, grid: { color: '#252540' } }
+            }
+        }
+    });
+}
+
+function switchCoachChart(metric, clientId) {
+    document.querySelectorAll('.chart-tabs button').forEach(b => b.classList.remove('active'));
+    document.getElementById('cw-btn').classList.toggle('active', metric === 'weight');
+    document.getElementById('cf-btn').classList.toggle('active', metric === 'bodyfat');
+    document.getElementById('cs-btn').classList.toggle('active', metric === 'size');
+    renderCoachChart(clientId, metric);
+}
+
+// ========== CLIENT VIEWS ==========
+function renderClientDashboard() {
+    const c = getClient(currentUser.clientId);
+    if (!c) { logout(); return; }
+    const l = getLatest(c);
+    const logs = getLogs(c);
+    
+    // Photo comparison data
+    const photos = (c.photos || []).sort((a,b) => b.date.localeCompare(a.date));
+    const latestPhoto = photos[0];
+    const prevPhoto = photos[1];
+    
+    function capFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '-'; }
+
+    render(`
+        <div class="header">
+            <div><h1>🏋️ My Progress</h1><div class="sub">Hi, ${c.name}!</div></div>
+            <button class="btn btn-sm btn-outline" onclick="logout()">Logout</button>
+        </div>
+        
+        ${c.goalWeight > 0 ? `
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;">
+                <div><small class="stat-lbl">🎯 Goal</small><div class="gold" style="font-weight:600;">${c.goalWeight}kg</div></div>
+                <div class="text-end"><small class="stat-lbl">By</small><div class="gold">${c.goalDate || '—'}</div></div>
+            </div>
+            ${l ? `<div class="goal-bar"><div class="goal-fill" style="width:${Math.min(100, (l.weight/c.goalWeight)*100)}%"></div></div>` : ''}
+        </div>` : ''}
+        
+        ${l ? `
+        <div class="card">
+            <div class="section-title">📊 Latest (${formatDate(l.date)})</div>
+            <div class="stats-grid">
+                <div class="stat"><div class="stat-lbl">Weight</div><div class="stat-val">${l.weight}kg</div></div>
+                <div class="stat"><div class="stat-lbl">Body Fat</div><div class="stat-val">${l.bodyFat || '-'}%</div></div>
+                <div class="stat"><div class="stat-lbl">Visceral</div><div class="stat-val">${l.visceralFat || '-'}</div></div>
+                <div class="stat"><div class="stat-lbl">Muscle</div><div class="stat-val">${l.muscleMass || '-'}kg</div></div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat"><div class="stat-lbl">Waist</div><div class="stat-val">${l.waist || '-'}cm</div></div>
+                <div class="stat"><div class="stat-lbl">Abdomen</div><div class="stat-val">${l.abdomen || '-'}cm</div></div>
+                <div class="stat"><div class="stat-lbl">Hip</div><div class="stat-val">${l.hip || '-'}cm</div></div>
+                <div class="stat"><div class="stat-lbl">Thigh</div><div class="stat-val">${l.thigh || '-'}cm</div></div>
+            </div>
+        </div>` : '<div class="card" style="text-align:center;color:#8a8a9a;">Log your first measurement to see progress!</div>'}
+        
+        <!-- Photo comparison -->
+        ${latestPhoto && prevPhoto ? `
+        <div class="card">
+            <div class="section-title">📸 Before vs Now</div>
+            <div class="photo-grid">
+                <div><img src="${prevPhoto.data}"><div class="cap">${formatDate(prevPhoto.date)} · Before</div></div>
+                <div><img src="${latestPhoto.data}"><div class="cap">${formatDate(latestPhoto.date)} · Now</div></div>
+            </div>
+        </div>` : (latestPhoto ? `
+        <div class="card">
+            <div class="section-title">📸 Latest Photo</div>
+            <img src="${latestPhoto.data}" style="width:100%;border-radius:10px;">
+            <div class="cap">${formatDate(latestPhoto.date)} · ${latestPhoto.angle}</div>
+        </div>` : '')}
+        
+        <!-- Tabs -->
+        <div class="tab-bar">
+            <button class="active" onclick="switchClientTab('add', '${c.id}')" id="ct-add">➕ Log</button>
+            <button onclick="switchClientTab('chart', '${c.id}')" id="ct-chart">📈 Chart</button>
+            <button onclick="switchClientTab('photo', '${c.id}')" id="ct-photo">📸 Photo</button>
+            <button onclick="switchClientTab('history', '${c.id}')" id="ct-hist">📋 History</button>
+        </div>
+        
+        <div id="clientTabContent">
+            ${renderClientLogForm(c.id)}
+        </div>
+    `);
+}
+
+function renderClientLogForm(clientId) {
+    return `
+    <div class="card">
+        <div class="section-title">Log Today's Measurements</div>
+        <input type="date" id="clDate" value="${today()}">
+        <div class="form-row"><input type="number" id="clWeight" step="0.1" placeholder="Weight (kg)"><input type="number" id="clBodyFat" step="0.1" placeholder="Body Fat %"></div>
+        <div class="form-row"><input type="number" id="clVisceral" step="0.1" placeholder="Visceral Fat"><input type="number" id="clMuscle" step="0.1" placeholder="Muscle (kg)"></div>
+        <div class="form-row"><input type="number" id="clWaist" step="0.1" placeholder="Waist (cm)"><input type="number" id="clAbdomen" step="0.1" placeholder="Abdomen (cm)"></div>
+        <div class="form-row"><input type="number" id="clHip" step="0.1" placeholder="Hip (cm)"><input type="number" id="clThigh" step="0.1" placeholder="Thigh (cm)"></div>
+        <button class="btn" onclick="clientAddLog('${clientId}')">Save</button>
+    </div>`;
+}
+
+function renderClientChart(clientId) {
+    return `<div class="card">
+        <div class="section-title">📈 Progress Chart</div>
+        <div class="chart-tabs">
+            <button class="active" onclick="switchClientChart('weight','${clientId}')" id="clw-btn">Weight</button>
+            <button onclick="switchClientChart('bodyfat','${clientId}')" id="clf-btn">Body Fat</button>
+            <button onclick="switchClientChart('size','${clientId}')" id="cls-btn">Size</button>
+        </div>
+        <canvas id="clientChart" height="200"></canvas>
+    </div>`;
+}
+
+function renderClientPhotoForm(clientId) {
+    return `
+    <div class="card">
+        <div class="section-title">📸 Upload Progress Photo</div>
+        <input type="date" id="phDate" value="${today()}">
+        <select id="phAngle">
+            <option value="front">Front</option>
+            <option value="side">Side</option>
+            <option value="back">Back</option>
+        </select>
+        <input type="file" id="phFile" accept="image/*" onchange="previewPhoto(event)">
+        <img id="phPreview" class="preview-img">
+        <button class="btn" onclick="clientUploadPhoto('${clientId}')" style="margin-top:8px;">Upload</button>
+    </div>`;
+}
+
+function renderClientHistory(clientId) {
+    const c = getClient(clientId);
+    if (!c || !c.logs || c.logs.length === 0) return '<div class="card" style="text-align:center;color:#8a8a9a;">No logs yet</div>';
+    return getLogs(c).map(log => `
+        <div class="log-item">
+            <span class="stat-lbl">${formatDate(log.date)}</span>
+            <span class="gold" style="font-weight:600;">${log.weight}kg</span>
+            <span class="stat-lbl">${log.bodyFat ? 'BF:'+log.bodyFat+'%' : ''} ${log.waist ? '· W:'+log.waist+'cm' : ''}</span>
+        </div>
+    `).join('');
+}
+
+function switchClientTab(tab, clientId) {
+    ['add','chart','photo','history'].forEach(t => {
+        const btn = document.getElementById('ct-'+t);
+        if (btn) btn.classList.toggle('active', t === tab);
+    });
+    
+    let content = '';
+    if (tab === 'add') content = renderClientLogForm(clientId);
+    else if (tab === 'chart') content = renderClientChart(clientId);
+    else if (tab === 'photo') content = renderClientPhotoForm(clientId);
+    else if (tab === 'history') content = renderClientHistory(clientId);
+    
+    document.getElementById('clientTabContent').innerHTML = content;
+    
+    if (tab === 'chart') {
+        setTimeout(() => renderClientChartCanvas(clientId, 'weight'), 100);
+    }
+}
+
+function clientAddLog(clientId) {
+    const c = getClient(clientId);
+    if (!c) return;
+    if (!c.logs) c.logs = [];
+    c.logs.push({
+        id: generateId(),
+        date: document.getElementById('clDate').value || today(),
+        weight: parseFloat(document.getElementById('clWeight').value) || 0,
+        bodyFat: parseFloat(document.getElementById('clBodyFat').value) || 0,
+        visceralFat: parseFloat(document.getElementById('clVisceral').value) || 0,
+        muscleMass: parseFloat(document.getElementById('clMuscle').value) || 0,
+        waist: parseFloat(document.getElementById('clWaist').value) || 0,
+        abdomen: parseFloat(document.getElementById('clAbdomen').value) || 0,
+        hip: parseFloat(document.getElementById('clHip').value) || 0,
+        thigh: parseFloat(document.getElementById('clThigh').value) || 0
+    });
+    saveState();
+    renderClientDashboard();
+}
+
+function previewPhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        const img = document.getElementById('phPreview');
+        img.src = ev.target.result;
+        img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clientUploadPhoto(clientId) {
+    const c = getClient(clientId);
+    if (!c) return;
+    const file = document.getElementById('phFile').files[0];
+    if (!file) { alert('Please select a photo'); return; }
+    
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        if (!c.photos) c.photos = [];
+        c.photos.push({
+            id: generateId(),
+            date: document.getElementById('phDate').value || today(),
+            angle: document.getElementById('phAngle').value,
+            data: ev.target.result
+        });
+        saveState();
+        renderClientDashboard();
+    };
+    reader.readAsDataURL(file);
+}
+
+let clientChartInstance = null;
+
+function renderClientChartCanvas(clientId, metric) {
+    const c = getClient(clientId);
+    if (!c || !c.logs || c.logs.length < 2) return;
+    const sorted = getSortedLogs(c);
+    const labels = sorted.map(l => l.date.slice(5));
+    
+    let datasets = [];
+    if (metric === 'weight') {
+        datasets = [{ label: 'Weight (kg)', data: sorted.map(l=>l.weight), borderColor: '#c98a3a', backgroundColor: '#c98a3a22', fill: true, tension: 0.3, pointRadius: 4 }];
+    } else if (metric === 'bodyfat') {
+        datasets = [{ label: 'Body Fat %', data: sorted.map(l=>l.bodyFat || null), borderColor: '#ff6b6b', backgroundColor: '#ff6b6b22', fill: true, tension: 0.3, pointRadius: 4 }];
+    } else {
+        datasets = [
+            { label: 'Waist (cm)', data: sorted.map(l=>l.waist || null), borderColor: '#4ec97e', fill: true, tension: 0.3, pointRadius: 4 },
+            { label: 'Hip (cm)', data: sorted.map(l=>l.hip || null), borderColor: '#00b4d8', fill: true, tension: 0.3, pointRadius: 4 }
+        ];
+    }
+    
+    const ctx = document.getElementById('clientChart');
+    if (!ctx) return;
+    if (clientChartInstance) clientChartInstance.destroy();
+    
+    clientChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#fff', font: {size: 10} } } },
+            scales: {
+                x: { ticks: { color: '#8a8a9a', font: {size: 9} }, grid: { color: '#252540' } },
+                y: { ticks: { color: '#8a8a9a', font: {size: 9} }, grid: { color: '#252540' } }
+            }
+        }
+    });
+}
+
+function switchClientChart(metric, clientId) {
+    document.querySelectorAll('.chart-tabs button').forEach(b => b.classList.remove('active'));
+    document.getElementById('clw-btn').classList.toggle('active', metric === 'weight');
+    document.getElementById('clf-btn').classList.toggle('active', metric === 'bodyfat');
+    document.getElementById('cls-btn').classList.toggle('active', metric === 'size');
+    renderClientChartCanvas(clientId, metric);
+}
+
+// ========== LOGOUT ==========
+function logout() {
+    currentUser = null;
+    renderLogin();
+}
+
+// ========== INIT ==========
+renderLogin();
+</script>
+</body>
+</html>
