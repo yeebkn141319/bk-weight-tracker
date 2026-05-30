@@ -161,11 +161,11 @@ setTimeout(function(){document.getElementById('quote-box').style.transition='opa
 <div class="card p-4 text-center"><p class="text-secondary mb-0">No measurements yet. Check back after your next session!</p></div>
 {% endif %}
 
-<div class="tab">
-<button class="act" onclick="ctb('chart')" id="tc-chart">📈 Progress</button>
-<button onclick="ctb('compare')" id="tc-compare">🔍 Compare</button>
-<button onclick="ctb('photos')" id="tc-photos">📸 Photos</button>
-<button onclick="ctb('history')" id="tc-history">📋 History</button>
+<div class="tab" id="main-tabs">
+<button class="act" data-tab="chart">📈 Progress</button>
+<button data-tab="compare">🔍 Compare</button>
+<button data-tab="photos">📸 Photos</button>
+<button data-tab="history">📋 History</button>
 </div>
 
 <div id="tab-chart">
@@ -279,11 +279,23 @@ function csw(m){
 }
 
 function ctb(t){
-  document.querySelectorAll('.tab button').forEach(b=>b.classList.remove('act'));
-  document.getElementById('tc-'+t).classList.add('act');
-  ['chart','compare','photos','history'].forEach(x=>document.getElementById('tab-'+x).style.display=x==t?'block':'none');
+  document.querySelectorAll('#main-tabs button').forEach(b=>b.classList.remove('act'));
+  var btn=document.querySelector('#main-tabs button[data-tab="'+t+'"]');
+  if(btn)btn.classList.add('act');
+  ['chart','compare','photos','history'].forEach(function(x){
+    var el=document.getElementById('tab-'+x);
+    if(el)el.style.display=x==t?'block':'none';
+  });
   if(t==='chart')setTimeout(renderPChart,200);
 }
+
+// Setup tab events
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('#main-tabs button').forEach(function(b){
+    b.addEventListener('click',function(){ctb(this.getAttribute('data-tab'));});
+    b.addEventListener('touchstart',function(e){e.preventDefault();ctb(this.getAttribute('data-tab'));},{passive:false});
+  });
+});
 
 function findSession(id){return sessionsJson.find(s=>s.id==id)}
 
