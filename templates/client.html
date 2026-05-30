@@ -73,20 +73,41 @@ tr:last-child td{border:none}
 </div></div>
 {% endif %}
 
-<!-- Quick Compare: Latest vs Previous -->
+<!-- Quick Compare: Latest vs Previous (ALL metrics) -->
 {% if s_prev %}
 <div class="card"><div class="card-body">
 <h6>📊 Latest vs Previous</h6>
-<div class="row2">
-<div><div class="lbl">Weight</div><div class="val" style="color:{% if s.weight and s_prev.weight and s.weight < s_prev.weight %}#4ec97e{% elif s.weight and s_prev.weight and s.weight > s_prev.weight %}#ff6b6b{% else %}#333{% endif %}">{{ s.weight }}kg</div><div class="small">{{ s_prev.weight }}kg</div></div>
-<div><div class="lbl">Body Fat</div><div class="val" style="color:{% if s.body_fat and s_prev.body_fat and s.body_fat < s_prev.body_fat %}#4ec97e{% elif s.body_fat and s_prev.body_fat and s.body_fat > s_prev.body_fat %}#ff6b6b{% else %}#333{% endif %}">{{ s.body_fat }}%</div><div class="small">{{ s_prev.body_fat }}%</div></div>
-<div><div class="lbl">Visceral</div><div class="val" style="color:{% if s.visceral_fat and s_prev.visceral_fat and s.visceral_fat < s_prev.visceral_fat %}#4ec97e{% elif s.visceral_fat and s_prev.visceral_fat and s.visceral_fat > s_prev.visceral_fat %}#ff6b6b{% else %}#333{% endif %}">{{ s.visceral_fat }}</div><div class="small">{{ s_prev.visceral_fat }}</div></div>
-</div>
-<div class="row2 mt-1">
-<div><div class="lbl">Muscle</div><div class="val" style="color:{% if s.muscle_mass and s_prev.muscle_mass and s.muscle_mass > s_prev.muscle_mass %}#4ec97e{% elif s.muscle_mass and s_prev.muscle_mass and s.muscle_mass < s_prev.muscle_mass %}#ff6b6b{% else %}#333{% endif %}">{{ s.muscle_mass }}%</div><div class="small">{{ s_prev.muscle_mass }}%</div></div>
-<div><div class="lbl">Waist</div><div class="val" style="color:{% if s.waist and s_prev.waist and s.waist < s_prev.waist %}#4ec97e{% elif s.waist and s_prev.waist and s.waist > s_prev.waist %}#ff6b6b{% else %}#333{% endif %}">{{ s.waist }}cm</div><div class="small">{{ s_prev.waist }}cm</div></div>
-<div><div class="lbl">Body Age</div><div class="val" style="color:{% if s.body_age and s_prev.body_age and s.body_age < s_prev.body_age %}#4ec97e{% elif s.body_age and s_prev.body_age and s.body_age > s_prev.body_age %}#ff6b6b{% else %}#333{% endif %}">{{ s.body_age }}</div><div class="small">{{ s_prev.body_age }}</div></div>
-</div>
+{% set bf_kg_cur = (s.weight * s.body_fat / 100)|round(1) if (s.weight and s.body_fat) else '' %}
+{% set bf_kg_prev = (s_prev.weight * s_prev.body_fat / 100)|round(1) if (s_prev.weight and s_prev.body_fat) else '' %}
+{% set bmi_cur = (s.weight / ((client.height/100)**2))|round(1) if s.weight else '' %}
+{% set bmi_prev = (s_prev.weight / ((client.height/100)**2))|round(1) if s_prev.weight else '' %}
+<table>
+<tr><td style="font-weight:600">Metric</td><td style="text-align:center;font-weight:600">Latest</td><td style="text-align:center;font-weight:600">Previous</td><td style="text-align:center">Status</td></tr>
+{% macro cmp(v_cur, v_prev, down_good, u) %}
+{% if v_cur and v_prev %}
+{% set diff = (v_cur - v_prev)|round(1) %}
+{% set is_good = (diff < 0) if down_good else (diff > 0) %}
+{% set cl = '#4ec97e' if is_good else ('#ff6b6b' if diff != 0 else '#999') %}
+{% set ic = '🟢' if is_good else ('🔴' if diff != 0 else '➡️') %}
+<tr><td style="color:#555">{{ caller() }}</td>
+<td style="text-align:center">{{ v_cur }}{{ u }}</td>
+<td style="text-align:center;color:#999">{{ v_prev }}{{ u }}</td>
+<td style="text-align:center;color:{{ cl }}">{{ ic }} {{ '+' if diff > 0 }}{{ diff }}{{ u }}</td></tr>
+{% endif %}
+{% endmacro %}
+{% call cmp(s.weight, s_prev.weight, true, 'kg') %}Weight{% endcall %}
+{% call cmp(s.body_fat, s_prev.body_fat, true, '%') %}Body Fat{% endcall %}
+{% call cmp(bf_kg_cur, bf_kg_prev, true, 'kg') %}Body Fat (kg){% endcall %}
+{% call cmp(bmi_cur, bmi_prev, true, '') %}BMI{% endcall %}
+{% call cmp(s.visceral_fat, s_prev.visceral_fat, true, '') %}Visceral Fat{% endcall %}
+{% call cmp(s.muscle_mass, s_prev.muscle_mass, false, '%') %}Muscle %{% endcall %}
+{% call cmp(s.bmr, s_prev.bmr, false, '') %}BMR{% endcall %}
+{% call cmp(s.body_age, s_prev.body_age, true, 'yr') %}Body Age{% endcall %}
+{% call cmp(s.waist, s_prev.waist, true, 'cm') %}Waist{% endcall %}
+{% call cmp(s.abdomen, s_prev.abdomen, true, 'cm') %}Abdomen{% endcall %}
+{% call cmp(s.hip, s_prev.hip, true, 'cm') %}Hip{% endcall %}
+{% call cmp(s.thigh, s_prev.thigh, true, 'cm') %}Thigh{% endcall %}
+</table>
 </div></div>
 {% endif %}
 
