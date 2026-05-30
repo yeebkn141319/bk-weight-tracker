@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_from_directory
-import werkzeug
 from werkzeug.security import generate_password_hash, check_password_hash
+import importlib.metadata as _im
 from werkzeug.utils import secure_filename
 from datetime import datetime, date, timedelta
 from PIL import Image, ImageDraw, ImageFont
@@ -138,7 +138,7 @@ def login():
             conn = get_db()
             c = _exec(conn, "SELECT * FROM coach WHERE username=?", [u]).fetchone()
             conn.close()
-            debug = f'User={u}, Found={c is not None}, WZ={werkzeug.__version__}'
+            debug = f'User={u}, Found={c is not None}, WZ={_im.version("werkzeug")}'
             if c:
                 pw_hash = c['password']
                 debug += f', Hash={pw_hash[:25]}...'
