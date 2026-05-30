@@ -18,7 +18,7 @@ input:focus{outline:none;border-color:#c98a3a}
 .tab button.act{background:#c98a3a;color:#fff}
 .photo-g{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .photo-g img{width:100%;border-radius:10px}
-.log-r{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #252540;font-size:12px}
+.log-r{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #252540;font-size:12px}
 .log-r:last-child{border:none}
 @media(min-width:768px){.container{max-width:600px;margin:0 auto;padding:16px}}
 @media(min-width:1024px){.container{max-width:800px;margin:0 auto;padding:24px}}
@@ -58,7 +58,7 @@ input:focus{outline:none;border-color:#c98a3a}
 <div class="st"><div class="st-lbl">Thigh</div><div class="st-val">{{ s.thigh }}cm</div></div>
 </div>
 {% if s.body_age %}
-<div class="mt-1 small">Bio Age: {{ bio_age }}yr · Body Age: {{ s.body_age }}yr · 
+<div class="mt-1 small">Bio Age: {{ bio_age }}yr · Body Age: {{ s.body_age }}yr ·
 <span style="color:{% if age_gap>0 %}#ff6b6b{% elif age_gap<0 %}#4ec97e{% else %}#f0d07a{% endif %}">
 {% if age_gap > 0 %}🔴 Body is {{ age_gap }}yr older{% elif age_gap < 0 %}🟢 Body is {{ age_gap|abs }}yr younger{% else %}✅ On track{% endif %}
 </span></div>
@@ -104,13 +104,17 @@ input:focus{outline:none;border-color:#c98a3a}
 
 <div id="tab-chart" style="display:none">
 <div class="card p-3">
-<div class="d-flex gap-2 mb-2 flex-wrap">
-<button class="btn btn-sm gold-bg" onclick="sw('weight')">Weight</button>
-<button class="btn btn-sm btn-outline-secondary text-white" onclick="sw('bodyfat')">Body Fat</button>
-<button class="btn btn-sm btn-outline-secondary text-white" onclick="sw('size')">Size</button>
-<button class="btn btn-sm btn-outline-secondary text-white" onclick="sw('bodyage')">Body Age</button>
+<div class="d-flex gap-1 mb-2" style="overflow-x:auto;white-space:nowrap">
+<button class="btn btn-sm gold-bg" onclick="sw('weight')" id="cw">⚖️ Weight</button>
+<button class="btn btn-sm btn-outline-secondary text-white" onclick="sw('bodyfat')" id="cf">💪 Fat %</button>
+<button class="btn btn-sm btn-outline-secondary text-white" onclick="sw('size')" id="cs">📏 Waist & Hip</button>
+<button class="btn btn-sm btn-outline-secondary text-white" onclick="sw('bodyage')" id="ca">🧬 Body Age</button>
+<button class="btn btn-sm btn-outline-secondary text-white" onclick="sw('all')" id="call">📊 All</button>
 </div>
-<canvas id="cChart" height="220"></canvas>
+<div style="position:relative;height:280px">
+<canvas id="cChart"></canvas>
+</div>
+<div class="mt-2 small text-secondary text-center" id="chart-hint">⬆️ Tap a metric button above to switch views</div>
 </div>
 </div>
 
@@ -137,11 +141,11 @@ input:focus{outline:none;border-color:#c98a3a}
 <div id="tab-log" style="display:none">
 {% for s in sessions %}
 <div class="log-r">
-<span class="text-secondary">{{ s.date|fmt_date }}</span>
-<span class="gold fw-bold">{{ s.weight }}kg</span>
-<span class="text-secondary">{% if s.body_fat %}F:{{ s.body_fat }}%{% endif %} {% if s.waist %}W:{{ s.waist }}{% endif %}</span>
+<span class="text-secondary" style="min-width:70px">{{ s.date|fmt_date }}</span>
+<span class="gold fw-bold" style="min-width:50px">{{ s.weight }}kg</span>
+<span class="text-secondary flex-fill">{% if s.body_fat %}F:{{ s.body_fat }}%{% endif %}{% if s.waist %} · W:{{ s.waist }}{% endif %}</span>
 <form method="POST" action="{{ url_for('delete_session',sid=s.id,cid=client.id) }}" onsubmit="return confirm('Delete this session?')" style="margin:0">
-<button type="submit" class="btn btn-sm" style="color:#ff6b6b;padding:0 4px;font-size:11px">✕</button>
+<button type="submit" class="btn btn-sm" style="color:#ff6b6b;padding:0 4px;font-size:13px;line-height:1">✕</button>
 </form>
 </div>
 {% endfor %}
@@ -150,27 +154,57 @@ input:focus{outline:none;border-color:#c98a3a}
 
 <script>
 let chartInst = null;
-function tb(t){document.querySelectorAll('.tab button').forEach(b=>b.classList.remove('act'));
-document.getElementById('t-'+t).classList.add('act');
-document.querySelectorAll('[id^=tab-]').forEach(e=>e.style.display='none');
-document.getElementById('tab-'+t).style.display='block';
-if(t==='chart') setTimeout(renderC,200);}
-async function renderC(){let r=await fetch('/api/chart/{{ client.id }}');let d=await r.json();if(!d||d.length<2)return;
-let ctx=document.getElementById('cChart');if(!ctx)return;if(chartInst)chartInst.destroy();
-chartInst=new Chart(ctx,{type:'line',data:{labels:d.map(x=>x.date.slice(5)),
-datasets:[{label:'Weight (kg)',data:d.map(x=>x.weight),borderColor:'#c98a3a',backgroundColor:'#c98a3a22',fill:true,tension:.3,pointRadius:4},
-{label:'Body Fat %',data:d.map(x=>x.body_fat),borderColor:'#ff6b6b',backgroundColor:'#ff6b6b22',fill:true,tension:.3,pointRadius:4,hidden:true},
-{label:'Waist (cm)',data:d.map(x=>x.waist),borderColor:'#4ec97e',backgroundColor:'#4ec97e22',fill:true,tension:.3,pointRadius:4,hidden:true},
-{label:'Hip (cm)',data:d.map(x=>x.hip),borderColor:'#00b4d8',backgroundColor:'#00b4d822',fill:true,tension:.3,pointRadius:4,hidden:true},
-{label:'Body Age',data:d.map(x=>x.body_age||null),borderColor:'#ff8c00',backgroundColor:'#ff8c0022',fill:true,tension:.3,pointRadius:4,hidden:true}]},
-options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#fff',font:{size:10}}}},
-scales:{x:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}},y:{ticks:{color:'#8a8a9a',font:{size:9}},grid:{color:'#252540'}}}}});
+function tb(t){
+  document.querySelectorAll('.tab button').forEach(b=>b.classList.remove('act'));
+  document.getElementById('t-'+t).classList.add('act');
+  document.querySelectorAll('[id^=tab-]').forEach(e=>e.style.display='none');
+  document.getElementById('tab-'+t).style.display='block';
+  if(t==='chart') setTimeout(renderC,300);
 }
-function sw(m){document.querySelectorAll('#tab-chart .btn').forEach(b=>b.className='btn btn-sm btn-outline-secondary text-white');
-if(m==='weight'){document.querySelector('#tab-chart .btn').className='btn btn-sm gold-bg';chartInst.data.datasets.forEach((d,i)=>d.hidden=i!==0)}
-else if(m==='bodyfat'){document.querySelectorAll('#tab-chart .btn')[1].className='btn btn-sm gold-bg';chartInst.data.datasets.forEach((d,i)=>d.hidden=i!==1)}
-else if(m==='size'){document.querySelectorAll('#tab-chart .btn')[2].className='btn btn-sm gold-bg';chartInst.data.datasets.forEach((d,i)=>d.hidden=i<2||i>3)}
-else{document.querySelectorAll('#tab-chart .btn')[3].className='btn btn-sm gold-bg';chartInst.data.datasets.forEach((d,i)=>d.hidden=i!==4)}
-chartInst.update();}
+
+async function renderC(){
+  let r=await fetch('/api/chart/{{ client.id }}');
+  let d=await r.json();
+  let hint=document.getElementById('chart-hint');
+  if(!d||d.length<2){hint.textContent='📊 Need 2+ sessions to show chart';return}
+  hint.textContent='📈 Showing '+d.length+' sessions - tap legend to toggle';
+  let ctx=document.getElementById('cChart');if(!ctx)return;
+  if(chartInst)chartInst.destroy();
+  var c={w:'#f0d07a',f:'#ff6b6b',wa:'#4ec97e',h:'#00b4d8',a:'#c98a3a',v:'#ff8c00',m:'#a78bfa'};
+  chartInst=new Chart(ctx,{type:'line',data:{labels:d.map(x=>x.date.slice(5)),
+    datasets:[
+      {label:'Weight (kg)',data:d.map(x=>x.weight),borderColor:c.w,backgroundColor:c.w+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8},
+      {label:'Body Fat %',data:d.map(x=>x.body_fat),borderColor:c.f,backgroundColor:c.f+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Waist (cm)',data:d.map(x=>x.waist),borderColor:c.wa,backgroundColor:c.wa+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Hip (cm)',data:d.map(x=>x.hip),borderColor:c.h,backgroundColor:c.h+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Body Age',data:d.map(x=>x.body_age||null),borderColor:c.a,backgroundColor:c.a+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Visceral Fat',data:d.map(x=>x.visceral_fat),borderColor:c.v,backgroundColor:c.v+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true},
+      {label:'Muscle %',data:d.map(x=>x.muscle_mass),borderColor:c.m,backgroundColor:c.m+'44',fill:true,tension:.4,pointRadius:5,pointHoverRadius:8,hidden:true}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'bottom',labels:{color:'#ccc',font:{size:10},boxWidth:12,padding:8,usePointStyle:true},
+          onClick:function(e,item,legend){var idx=item.datasetIndex;var ci=this.chart;ci.data.datasets[idx].hidden=!ci.data.datasets[idx].hidden;ci.update();}},
+        tooltip:{backgroundColor:'#1a1a2e',titleColor:'#f0d07a',bodyColor:'#fff',borderColor:'#333',borderWidth:1,padding:10,
+          callbacks:{label:function(ctx){return ctx.dataset.label+': '+ctx.raw}}}
+      },
+      scales:{x:{ticks:{color:'#8a8a9a',font:{size:10}},grid:{color:'#252540'}},
+              y:{ticks:{color:'#8a8a9a',font:{size:10}},grid:{color:'#252540'}}},
+      interaction:{mode:'index',intersect:false}
+    }});
+}
+
+function sw(m){
+  if(!chartInst)return;
+  var b=chartInst.data.datasets;
+  document.querySelectorAll('#tab-chart .btn').forEach(x=>x.className='btn btn-sm btn-outline-secondary text-white');
+  if(m=='weight'){b.forEach((d,i)=>d.hidden=i!=0);document.getElementById('cw').className='btn btn-sm gold-bg'}
+  else if(m=='bodyfat'){b.forEach((d,i)=>d.hidden=i!=1);document.getElementById('cf').className='btn btn-sm gold-bg'}
+  else if(m=='size'){b.forEach((d,i)=>d.hidden=!(i==2||i==3));document.getElementById('cs').className='btn btn-sm gold-bg'}
+  else if(m=='bodyage'){b.forEach((d,i)=>d.hidden=i!=4);document.getElementById('ca').className='btn btn-sm gold-bg'}
+  else{b.forEach((d,i)=>d.hidden=false);document.getElementById('call').className='btn btn-sm gold-bg'}
+  chartInst.update();
+}
 </script>
 </body></html>
