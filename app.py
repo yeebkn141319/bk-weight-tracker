@@ -13,12 +13,14 @@ ALLOWED_EXTENSIONS = {'png','jpg','jpeg','gif','webp'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ===== DATABASE ABSTRACTION (SQLite local / PostgreSQL on Render) =====
-PG = os.environ.get('DATABASE_URL','').strip() != ''
+_HARDCODED_DB = 'postgresql://weight_tracker_db_xrw7_user:zpaPQXZwd40tO2dIUGNtxwTCakvYJx43@dpg-d8dckcmk1jcs738s2lvg-a.singapore-postgres.render.com/weight_tracker_db_xrw7'
+_DB_URL = os.environ.get('DATABASE_URL', '') or _HARDCODED_DB
+
+PG = _DB_URL.strip() != ''
 
 if PG:
     import psycopg2
     import psycopg2.extras
-    _DB_URL = os.environ['DATABASE_URL']
     if _DB_URL.startswith('postgres://'):
         _DB_URL = _DB_URL.replace('postgres://', 'postgresql://', 1)
     
