@@ -34,9 +34,9 @@ input:focus{outline:none;border-color:#c98a3a}
 
 {% set s = sessions[0] if sessions else None %}
 {% if s %}
-{% set bmi = (s.weight / ((client.height/100)**2))|round(1) %}
-{% set bf_kg = (s.weight * s.body_fat / 100)|round(1) if s.body_fat else 0 %}
-{% set muscle_kg = (s.weight * s.muscle_mass / 100)|round(1) if s.muscle_mass else 0 %}
+{% set bmi = (s.weight / ((client.height/100)**2))|round(1) if s.weight else 0 %}
+{% set bf_kg = (s.weight * s.body_fat / 100)|round(1) if (s.weight and s.body_fat) else 0 %}
+{% set muscle_kg = (s.weight * s.muscle_mass / 100)|round(1) if (s.weight and s.muscle_mass) else 0 %}
 {% set bio_age = client.birthday|calc_bio_age %}
 {% set age_gap = s.body_age - bio_age if s.body_age else 0 %}
 
@@ -140,6 +140,9 @@ input:focus{outline:none;border-color:#c98a3a}
 <span class="text-secondary">{{ s.date|fmt_date }}</span>
 <span class="gold fw-bold">{{ s.weight }}kg</span>
 <span class="text-secondary">{% if s.body_fat %}F:{{ s.body_fat }}%{% endif %} {% if s.waist %}W:{{ s.waist }}{% endif %}</span>
+<form method="POST" action="{{ url_for('delete_session',sid=s.id,cid=client.id) }}" onsubmit="return confirm('Delete this session?')" style="margin:0">
+<button type="submit" class="btn btn-sm" style="color:#ff6b6b;padding:0 4px;font-size:11px">✕</button>
+</form>
 </div>
 {% endfor %}
 </div>

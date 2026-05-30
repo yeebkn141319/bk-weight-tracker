@@ -264,6 +264,15 @@ def add_session(cid):
     return redirect(url_for('client_detail',cid=cid))
 
 # ===== UPLOAD PHOTO =====
+@app.route('/coach/session_delete/<int:sid>/<int:cid>', methods=['POST'])
+def delete_session(sid, cid):
+    if not require_coach(): return redirect(url_for('login'))
+    conn = get_db()
+    conn.execute("DELETE FROM sessions WHERE id=? AND client_id=?",[sid,cid])
+    conn.commit()
+    conn.close()
+    return redirect(url_for('client_detail',cid=cid))
+
 @app.route('/coach/photo/<int:cid>', methods=['POST'])
 def upload_photo(cid):
     if not require_coach(): return redirect(url_for('login'))
