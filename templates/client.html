@@ -219,10 +219,24 @@ setTimeout(function(){document.getElementById('quote-box').style.transition='opa
 
 <div id="tab-history" style="display:none">
 {% for s in sessions %}
+{% if not loop.last %}
+{% set prev = sessions[loop.index] %}
+{% set w_diff = (s.weight - prev.weight)|round(1) if (s.weight and prev.weight) else 0 %}
+{% set f_diff = (s.body_fat - prev.body_fat)|round(1) if (s.body_fat and prev.body_fat) else 0 %}
+{% set ws_diff = (s.waist - prev.waist)|round(1) if (s.waist and prev.waist) else 0 %}
+{% else %}
+{% set w_diff = 0 %}{% set f_diff = 0 %}{% set ws_diff = 0 %}
+{% endif %}
 <div class="stats-r">
 <span class="text-secondary" style="min-width:70px">{{ s.date|fmt_date }}</span>
 <span class="gold fw-bold" style="min-width:50px">{{ s.weight }}kg</span>
 <span class="text-secondary flex-fill">{% if s.body_fat %}F:{{ s.body_fat }}%{% endif %}{% if s.waist %} · W:{{ s.waist }}{% endif %}</span>
+{% if not loop.last %}
+<span style="font-size:11px;color:{% if w_diff < 0 %}#4ec97e{% elif w_diff > 0 %}#ff6b6b{% else %}#f0d07a{% endif %};min-width:55px;text-align:right">
+{% if w_diff < 0 %}🟢{% elif w_diff > 0 %}🔴{% else %}➡️{% endif %}
+{% if w_diff > 0 %}+{% endif %}{{ w_diff }}kg
+</span>
+{% endif %}
 </div>
 {% endfor %}
 {% if not sessions %}<div class="card p-4 text-center"><p class="text-secondary mb-0">No history yet.</p></div>{% endif %}
