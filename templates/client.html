@@ -132,6 +132,8 @@ tr:last-child td{border:none}
 <button data-metric="bmr">⚡ BMR</button>
 <button data-metric="waist">📏 Waist</button>
 <button data-metric="hips">📐 Hips</button>
+<button data-metric="abdomen">📏 Abdomen</button>
+<button data-metric="thigh">🦵 Thigh</button>
 </div>
 <div style="height:200px"><canvas id="cChart"></canvas></div>
 </div></div>
@@ -227,7 +229,9 @@ function renderChart(metric){
     muscle:{label:'Muscle %',data:chartData.map(function(d){return d.muscle_mass;}),color:'#a78bfa'},
     bmr:{label:'BMR',data:chartData.map(function(d){return d.bmr;}),color:'#34d399'},
     waist:{label:'Waist (cm)',data:chartData.map(function(d){return d.waist;}),color:'#4ec97e'},
-    hips:{label:'Hip (cm)',data:chartData.map(function(d){return d.hip;}),color:'#00b4d8'}
+    hips:{label:'Hip (cm)',data:chartData.map(function(d){return d.hip;}),color:'#00b4d8'},
+    abdomen:{label:'Abdomen (cm)',data:chartData.map(function(d){return d.abdomen;}),color:'#e879f9'},
+    thigh:{label:'Thigh (cm)',data:chartData.map(function(d){return d.thigh;}),color:'#94a3b8'}
   };
   
   var ds=[];
@@ -238,6 +242,8 @@ function renderChart(metric){
   else if(metric=='bmr'){ds.push(toDs(allDatasets.bmr));}
   else if(metric=='waist'){ds.push(toDs(allDatasets.waist));}
   else if(metric=='hips'){ds.push(toDs(allDatasets.hips));}
+  else if(metric=='abdomen'){ds.push(toDs(allDatasets.abdomen));}
+  else if(metric=='thigh'){ds.push(toDs(allDatasets.thigh));}
   
   function toDs(m){return {label:m.label,data:m.data,borderColor:m.color,backgroundColor:m.color+'22',fill:true,tension:.4,pointRadius:5};}
   
