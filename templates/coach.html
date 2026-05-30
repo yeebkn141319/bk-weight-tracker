@@ -21,7 +21,10 @@
 <div class="container">
 <div class="d-flex justify-content-between align-items-center mb-3">
 <div><h4 class="gold mb-0">🏋️ BK Tracker</h4><small class="text-secondary">{{ name }}</small></div>
+<div class="d-flex gap-2">
+<a href="{{ url_for('export_csv') }}" class="text-secondary small text-decoration-none">📥 Export</a>
 <a href="{{ url_for('logout') }}" class="text-secondary small text-decoration-none">Logout</a>
+</div>
 </div>
 
 <div class="card p-3">

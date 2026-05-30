@@ -326,6 +326,24 @@ def db_check():
     except Exception as e: s += f'Err: {e}'
     return s
 
+@app.route('/export/csv')
+def export_csv():
+    if not require_coach(): return redirect(url_for('login'))
+    conn = get_db()
+    clients = _exec(conn, "SELECT id,name,phone,birthday,height,gender,goal_weight,is_active FROM clients ORDER BY name").fetchall()
+    lines = ['Client,Phone,DOB,Height,Gender,Goal Weight,Active,Session Date,Weight,Body Fat,Visceral Fat,Muscle %,BMR,Body Age,Waist,Abdomen,Hip,Thigh,Notes']
+    for cl in clients:
+        sessions = _exec(conn, "SELECT * FROM sessions WHERE client_id=? ORDER BY date ASC", [cl['id']]).fetchall()
+        if sessions:
+            for se in sessions:
+                lines.append(f"{cl['name']},{cl['phone']},{cl['birthday']},{cl['height']},{cl['gender']},{cl['goal_weight']},{cl['is_active']},{se['date'][:10]},{se['weight']},{se['body_fat']},{se['visceral_fat']},{se['muscle_mass']},{se['bmr']},{se['body_age']},{se['waist']},{se['abdomen']},{se['hip']},{se['thigh']},{se.get('notes','')}")
+        else:
+            lines.append(f"{cl['name']},{cl['phone']},{cl['birthday']},{cl['height']},{cl['gender']},{cl['goal_weight']},{cl['is_active']},,,,,,,,,,,,")
+    conn.close()
+    csv_text = '\n'.join(lines)
+    from flask import Response
+    return Response(csv_text, mimetype='text/csv', headers={'Content-Disposition': 'attachment;filename=weight_tracker_export.csv'})
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'],filename)
