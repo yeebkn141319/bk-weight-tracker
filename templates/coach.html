@@ -8,9 +8,9 @@
 .card{background:#1a1a2e;border:none;border-radius:16px;margin-bottom:10px}
 .client{border-radius:12px;margin-bottom:8px;cursor:pointer;transition:background .2s;padding:0}
 .client:hover{background:#2a2a48}.client:active{background:#30305a}
-.stat{text-align:center;flex:1;padding:8px 4px}
-.stat-lbl{font-size:9px;color:#8a8a9a;text-transform:uppercase}
-.stat-val{font-size:18px;font-weight:700}
+.stat{text-align:center;flex:1;padding:6px 2px;min-width:0}
+.stat-lbl{font-size:8px;color:#8a8a9a;text-transform:uppercase;white-space:nowrap}
+.stat-val{font-size:16px;font-weight:700}
 .fltr{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid #333;background:transparent;color:#8a8a9a;cursor:pointer;text-decoration:none}
 .fltr.active,.fltr:hover{background:#c98a3a;color:#fff;border-color:#c98a3a}
 .fab{position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;font-size:26px;z-index:100;box-shadow:0 4px 15px rgba(201,138,58,.4);display:flex;align-items:center;justify-content:center;text-decoration:none}
@@ -47,12 +47,12 @@
 {% if f=='all' or c.status==f %}
 <a href="{{ url_for('client_detail',cid=c.id) }}" class="text-decoration-none">
 <div class="client card p-3" style="border-left:4px solid {{ c.color }}">
-<div class="d-flex justify-content-between align-items-center">
-<div><div class="fw-bold text-white" style="font-size:17px">{{ c.name }}</div>
-<div class="text-secondary small">{{ c.phone }} · {{ c.gender }} · {{ c.height }}cm</div></div>
-<div style="font-size:12px;padding:3px 10px;border-radius:20px;font-weight:600;background:{{ c.color }}22;color:{{ c.color }};border:1px solid {{ c.color }}44">{{ c.label }}</div>
+<div class="d-flex justify-content-between align-items-start">
+<div style="flex:1;min-width:0;padding-right:8px"><div class="fw-bold text-white" style="font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</div>
+<div class="text-secondary small" style="font-size:10px">{{ c.phone }} · {{ c.gender }} · {{ c.height }}cm</div></div>
+<div style="font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600;white-space:nowrap;background:{{ c.color }}22;color:{{ c.color }};border:1px solid {{ c.color }}44;min-width:60px;text-align:center">{{ c.label }}</div>
 </div>
-<div class="d-flex gap-3 mt-1 small text-secondary">
+<div class="d-flex gap-2 mt-1 small text-secondary" style="font-size:10px">
 {% if c.last_weight %}📊 {{ c.last_weight }}kg{% endif %}
 {% if c.session_count %}📋 {{ c.session_count }}x{% endif %}
 {% if c.goal_weight %}🎯 {{ c.goal_weight }}kg{% endif %}
