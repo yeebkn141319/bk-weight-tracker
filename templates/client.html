@@ -142,6 +142,21 @@ setTimeout(function(){document.getElementById('quote-box').style.transition='opa
 </div>
 {% endif %}
 
+<!-- All Sessions Quick View -->
+<div class="card p-3">
+<div class="title-sm">📋 All Sessions ({{ sessions|length }})</div>
+{% for se in sessions %}
+{% set diff_w = 0 if loop.last or not loop.first else ((sessions[loop.index0-1].weight or 0) - (se.weight or 0))|round(1) %}
+<div class="d-flex justify-content-between align-items-center" style="padding:5px 0;border-bottom:1px solid #252540">
+<div><span class="text-secondary" style="font-size:11px">{{ se.date|fmt_date }}</span></div>
+<div><span class="fw-bold" style="font-size:13px">{{ se.weight }}kg</span>
+{% if se.body_fat %}<span class="text-secondary" style="font-size:10px"> · F:{{ se.body_fat }}%</span>{% endif %}
+{% if se.waist %}<span class="text-secondary" style="font-size:10px"> · W:{{ se.waist }}cm</span>{% endif %}
+</div>
+</div>
+{% endfor %}
+</div>
+
 {% else %}
 <div class="card p-4 text-center"><p class="text-secondary mb-0">No measurements yet. Check back after your next session!</p></div>
 {% endif %}
@@ -215,7 +230,7 @@ setTimeout(function(){document.getElementById('quote-box').style.transition='opa
 </div>
 
 <script>
-let sessionsJson = {{ sessions_json }}
+let sessionsJson = {{ sessions_json | safe }}
 let pChart=null;
 let chartData={{ chart_json }};
 let hint=document.getElementById('chart-hint');
