@@ -151,6 +151,7 @@ def login():
             c = _exec(conn, "SELECT * FROM coach WHERE username=?", [u]).fetchone()
             conn.close()
             debug = f'User={u}, Found={c is not None}'
+            match = False
             if c:
                 pw_hash = c['password']
                 debug += f', Hash={pw_hash[:25]}...'
@@ -159,7 +160,7 @@ def login():
                     debug += f', Match={match}'
                 except Exception as e:
                     debug += f', CheckErr={e}'
-                if match:
+            if match:
                     session['coach_id']=c['id']; session['coach_name']=c['name']; session.permanent=True
                     return redirect(url_for('coach_dash'))
             return render_template('login.html',error=f'Invalid ({debug})')
