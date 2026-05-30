@@ -119,6 +119,7 @@ tr:last-child td{border:none}
 <div><select class="sel" id="cmp2"><option value="">Date 2</option>{% for se in sessions %}<option value="{{ se.id }}">{{ se.date[:10] }}</option>{% endfor %}</select></div>
 </div>
 <div id="cmp-result"></div>
+<div id="cmp-photos" class="mt-1"></div>
 </div></div>
 
 <!-- Trend Chart -->
@@ -140,6 +141,7 @@ tr:last-child td{border:none}
 <script>
 let chartData = {{ chart_json }};
 let sessionsData = {{ sessions_json }};
+let photosData = {{ photos_json }};
 let pChart = null;
 
 // Compare
@@ -152,23 +154,35 @@ function doCompare(){
   var id1=document.getElementById('cmp1').value;
   var id2=document.getElementById('cmp2').value;
   var r=document.getElementById('cmp-result');
-  if(!id1||!id2||id1==id2){r.innerHTML='<div class="small" style="color:#999;margin-top:6px">Select two different dates</div>';return;}
+  var p=document.getElementById('cmp-photos');
+  if(!id1||!id2||id1==id2){r.innerHTML='<div class="small" style="color:#999;margin-top:6px">Select two different dates</div>';p.innerHTML='';return;}
   var s1=findSess(id1),s2=findSess(id2);
   if(!s1||!s2)return;
+  
+  // Table with ALL metrics
   var fields=[
     {l:'Weight',k:'weight',u:'kg',r:1,down:true},
     {l:'Body Fat',k:'body_fat',u:'%',r:1,down:true},
+    {l:'Body Fat (kg)',k:'bf_kg',u:'kg',r:1,calc:function(s){return (s.weight*s.body_fat/100).toFixed(1);},down:true},
+    {l:'BMI',k:'bmi',u:'',r:1,calc:function(s){return (s.weight/Math.pow({{ client.height }}/100,2)).toFixed(1);},down:true},
     {l:'Visceral Fat',k:'visceral_fat',u:'',r:0,down:true},
-    {l:'Waist',k:'waist',u:'cm',r:0,down:true},
-    {l:'Hip',k:'hip',u:'cm',r:0,down:true},
     {l:'Muscle %',k:'muscle_mass',u:'%',r:1,down:false},
-    {l:'BMR',k:'bmr',u:'',r:0,down:false}
+    {l:'BMR',k:'bmr',u:'',r:0,down:false},
+    {l:'Body Age',k:'body_age',u:'yr',r:0,down:true},
+    {l:'Waist',k:'waist',u:'cm',r:0,down:true},
+    {l:'Abdomen',k:'abdomen',u:'cm',r:0,down:true},
+    {l:'Hip',k:'hip',u:'cm',r:0,down:true},
+    {l:'Thigh',k:'thigh',u:'cm',r:0,down:true}
   ];
-  var h='<table><tr><td style="color:#999">Metric</td><td style="text-align:center;font-weight:600">'+s1.date.slice(0,10)+'</td><td style="text-align:center;font-weight:600">'+s2.date.slice(0,10)+'</td><td style="text-align:center">Change</td></tr>';
+  function getV(s,f){
+    return f.calc?parseFloat(f.calc(s)):(s[f.k]!=null?parseFloat(s[f.k]):null);
+  }
+  
+  var h='<table><tr><td style="color:#999;font-weight:600">Metric</td><td style="text-align:center;font-weight:600">'+s1.date.slice(0,10)+'</td><td style="text-align:center;font-weight:600">'+s2.date.slice(0,10)+'</td><td style="text-align:center">Change</td></tr>';
   fields.forEach(function(f){
-    var v1=s1[f.k],v2=s2[f.k];
-    if(v1==null||v2==null)return;
-    v1=Number(v1).toFixed(f.r);v2=Number(v2).toFixed(f.r);
+    var v1=getV(s1,f),v2=getV(s2,f);
+    if(v1==null||v2==null||isNaN(v1)||isNaN(v2))return;
+    v1=v1.toFixed(f.r);v2=v2.toFixed(f.r);
     var diff=(v2-v1).toFixed(f.r);
     var good=f.down?(diff<0):(diff>0);
     var cl=diff==0?'#999':(good?'#4ec97e':'#ff6b6b');
@@ -177,6 +191,20 @@ function doCompare(){
   });
   h+='</table>';
   r.innerHTML=h;
+  
+  // Show photos for these dates
+  var d1=s1.date.slice(0,10),d2=s2.date.slice(0,10);
+  var p1=photosData.filter(function(p){return p.date.indexOf(d1)>=0;});
+  var p2=photosData.filter(function(p){return p.date.indexOf(d2)>=0;});
+  if(p1.length||p2.length){
+    var ph='<div style="margin-top:8px;border-top:1px solid #eee;padding-top:8px"><div class="lbl" style="margin-bottom:4px">📸 Progress Photos</div><div class="row2">';
+    ph+='<div>'+(p1.length?'<img src="/uploads/'+p1[0].filename+'" style="width:100%;border-radius:8px"><div class="small" style="margin-top:2px">'+d1+'</div>':'<div class="small" style="padding:20px 0;text-align:center">No photo</div>')+'</div>';
+    ph+='<div>'+(p2.length?'<img src="/uploads/'+p2[0].filename+'" style="width:100%;border-radius:8px"><div class="small" style="margin-top:2px">'+d2+'</div>':'<div class="small" style="padding:20px 0;text-align:center">No photo</div>')+'</div>';
+    ph+='</div></div>';
+    p.innerHTML=ph;
+  } else {
+    p.innerHTML='';
+  }
 }
 
 // Chart
