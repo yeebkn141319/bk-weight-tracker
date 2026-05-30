@@ -133,13 +133,27 @@ def login():
     if request.method == 'POST':
         u = request.form.get('username','')
         p = request.form.get('password','')
-        conn = get_db()
-        c = _exec(conn, "SELECT * FROM coach WHERE username=?", [u]).fetchone()
-        conn.close()
-        if c and check_password_hash(c['password'],p):
-            session['coach_id']=c['id']; session['coach_name']=c['name']; session.permanent=True
-            return redirect(url_for('coach_dash'))
-        return render_template('login.html',error='Invalid')
+        try:
+            conn = get_db()
+            c = _exec(conn, "SELECT * FROM coach WHERE username=?", [u]).fetchone()
+            conn.close()
+            import traceback
+            debug = f'User={u}, Found={c is not None}'
+            if c:
+                pw_hash = c['password']
+                debug += f', Hash={pw_hash[:20]}...'
+                try:
+                    from werkzeug.security import check_password_hash
+                    match = check_password_hash(pw_hash, p)
+                    debug += f', Match={match}'
+                except Exception as e:
+                    debug += f', CheckErr={e}'
+                if match:
+                    session['coach_id']=c['id']; session['coach_name']=c['name']; session.permanent=True
+                    return redirect(url_for('coach_dash'))
+            return render_template('login.html',error=f'Invalid ({debug})')
+        except Exception as e:
+            return render_template('login.html',error=f'Error: {e}')
     return render_template('login.html')
 
 @app.route('/client-login', methods=['GET','POST'])
