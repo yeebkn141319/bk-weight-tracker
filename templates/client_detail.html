@@ -72,6 +72,7 @@ input:focus{outline:none;border-color:#c98a3a}
 <button class="act" onclick="tb('add')" id="t-add">➕ Add</button>
 <button onclick="tb('chart')" id="t-chart">📈 Chart</button>
 <button onclick="tb('photo')" id="t-photo">📸 Photo</button>
+<button onclick="tb('ai')" id="t-ai">🤖 AI Scan</button>
 <button onclick="tb('log')" id="t-log">📋 Logs</button>
 </div>
 
@@ -135,6 +136,88 @@ input:focus{outline:none;border-color:#c98a3a}
 <div><img src="{{ url_for('uploaded_file',filename=p.filename) }}"><div class="text-secondary text-center" style="font-size:10px">{{ p.date|fmt_date }} · {{ p.angle }}</div></div>
 {% endfor %}
 </div>
+{% endif %}
+</div>
+
+<div id="tab-ai" style="display:none">
+<!-- Add AI Scan form -->
+<div class="card p-3">
+<div class="title-sm">🤖 Add AI云健康 Scan Result</div>
+<form method="POST" action="{{ url_for('add_ai_scan',cid=client.id) }}">
+<div class="row g-1 mb-1">
+<div class="col-6"><input type="date" name="date" value="{{ today }}"></div>
+<div class="col-6"><input type="text" name="overall_score" placeholder="Overall score e.g. 82分"></div>
+</div>
+<div class="mb-1"><input type="text" name="summary" placeholder="Summary / key takeaway" style="width:100%"></div>
+<div class="mb-1">
+<label class="small text-secondary">⚠️ 中度异常 (++) - one per line: category | item | value | range | suggestion</label>
+<textarea name="moderate_items" rows="3" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;width:100%;font-size:12px" placeholder="e.g. 心脑血管 | 动脉硬化指数 | 2.8 | 0-2.5 | 控制饮食运动
+消化系统 | 胃功能 | 1.2 | 0.5-1.0 | 规律进食"></textarea>
+</div>
+<div class="mb-1">
+<label class="small text-secondary">🚨 重度异常 (+++) - same format</label>
+<textarea name="severe_items" rows="2" style="background:#252540;border:1px solid #333;color:#fff;border-radius:10px;padding:8px;width:100%;font-size:12px" placeholder="e.g. 骨骼系统 | 骨密度 | -2.8 | &gt;-1.0 | 补钙+维生素D"></textarea>
+</div>
+<button type="submit" class="btn gold-bg w-100 py-2 fw-bold">💾 Save Scan Result</button>
+</form>
+</div>
+
+<!-- Display existing scans -->
+{% if scans %}
+{% for scan in scans %}
+{% set moderate = scan.moderate_items|from_json %}
+{% set severe = scan.severe_items|from_json %}
+<div class="card p-3" style="border-left:4px solid #c98a3a">
+<div class="d-flex justify-content-between align-items-start mb-2">
+<div>
+<div class="title-sm" style="margin-bottom:0">🤖 AI Scan — {{ scan.date|fmt_date }}</div>
+{% if scan.overall_score %}<div style="font-size:24px;font-weight:700;color:#f0d07a">{{ scan.overall_score }}</div>{% endif %}
+{% if scan.summary %}<div class="small" style="color:#8a8a9a">{{ scan.summary }}</div>{% endif %}
+</div>
+<form method="POST" action="{{ url_for('delete_ai_scan',sid=scan.id,cid=client.id) }}" onsubmit="return confirm('Delete this scan?')" style="margin:0">
+<button type="submit" class="btn btn-sm" style="color:#ff6b6b;padding:0 4px;font-size:13px;line-height:1">✕</button>
+</form>
+</div>
+
+{% if severe|length > 0 %}
+<div class="mb-2">
+<div class="small fw-bold mb-1" style="color:#ff6b6b">🚨 重度异常 (+++) — {{ severe|length }} findings</div>
+{% for item in severe %}
+<div style="background:#2a1a1a;border:1px solid #5a2020;border-radius:8px;padding:8px 10px;margin-bottom:4px">
+<div class="d-flex justify-content-between">
+<span class="fw-bold" style="color:#ff6b6b">{{ item.category }}</span>
+<span style="color:#f0d07a">{{ item.value }}</span>
+</div>
+<div class="small text-secondary">{{ item.item }}{% if item.range %} · Normal: {{ item.range }}{% endif %}</div>
+{% if item.suggestion %}<div class="small mt-1" style="color:#ff8c00">💡 {{ item.suggestion }}</div>{% endif %}
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+{% if moderate|length > 0 %}
+<div>
+<div class="small fw-bold mb-1" style="color:#f0d07a">⚠️ 中度异常 (++) — {{ moderate|length }} findings</div>
+{% for item in moderate %}
+<div style="background:#2a2510;border:1px solid #5a4a10;border-radius:8px;padding:8px 10px;margin-bottom:4px">
+<div class="d-flex justify-content-between">
+<span class="fw-bold" style="color:#f0d07a">{{ item.category }}</span>
+<span style="color:#fff">{{ item.value }}</span>
+</div>
+<div class="small text-secondary">{{ item.item }}{% if item.range %} · Normal: {{ item.range }}{% endif %}</div>
+{% if item.suggestion %}<div class="small mt-1" style="color:#c98a3a">💡 {{ item.suggestion }}</div>{% endif %}
+</div>
+{% endfor %}
+</div>
+{% endif %}
+
+{% if moderate|length == 0 and severe|length == 0 %}
+<div class="text-center py-3"><span class="text-secondary small">No abnormal findings recorded</span></div>
+{% endif %}
+</div>
+{% endfor %}
+{% else %}
+<div class="card p-4 text-center"><p class="text-secondary mb-0">No AI scan results yet.<br>Use the form above to add findings from a 云健康 report.</p></div>
 {% endif %}
 </div>
 

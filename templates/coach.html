@@ -35,6 +35,15 @@
 <div class="stat"><div class="stat-lbl">🔴 Overdue</div><div class="stat-val" style="color:#ff6b6b">{{ clients|selectattr('status','in','warn,overdue')|list|length }}</div></div>
 <div class="stat"><div class="stat-lbl">🆕 New</div><div class="stat-val" style="color:#8a8a9a">{{ clients|selectattr('status','equalto','new')|list|length }}</div></div>
 </div>
+{% set total_scans = clients|sum(attribute='scan_count') %}
+{% if total_scans > 0 %}
+<div class="mt-1 text-center small" style="color:#a78bfa">🤖 {{ total_scans }} AI scan records across all clients</div>
+{% endif %}
+</div>
+
+<!-- 🔍 Search bar -->
+<div class="mb-3">
+<input id="client-search" type="text" class="form-control" style="background:#252540;border:1px solid #333;color:#fff;border-radius:12px;padding:10px 14px;font-size:14px" placeholder="🔍 Search client name..." oninput="filterClients()">
 </div>
 
 <div class="d-flex gap-2 mb-3 flex-wrap">
@@ -48,7 +57,7 @@
 
 {% for c in clients %}
 {% if f=='all' or c.status==f %}
-<a href="{{ url_for('client_detail',cid=c.id) }}" class="text-decoration-none">
+<a href="{{ url_for('client_detail',cid=c.id) }}" class="text-decoration-none client-link" data-name="{{ c.name|lower }}">
 <div class="client card p-3" style="border-left:4px solid {{ c.color }}">
 <div class="d-flex justify-content-between align-items-start">
 <div style="flex:1;min-width:0;padding-right:8px"><div class="fw-bold text-white" style="font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }}</div>
@@ -59,6 +68,7 @@
 {% if c.last_weight %}📊 {{ c.last_weight }}kg{% endif %}
 {% if c.session_count %}📋 {{ c.session_count }}x{% endif %}
 {% if c.goal_weight %}🎯 {{ c.goal_weight }}kg{% endif %}
+{% if c.scan_count %}<span style="color:#a78bfa">🤖 {{ c.scan_count }} scan{% if c.scan_count>1 %}s{% endif %}</span>{% endif %}
 </div>
 </div></a>
 {% endif %}
@@ -67,4 +77,13 @@
 {% endfor %}
 </div>
 <a href="{{ url_for('add_client') }}" class="fab gold-bg text-white text-decoration-none">+</a>
+<script>
+function filterClients() {
+  var q = document.getElementById('client-search').value.toLowerCase().trim();
+  document.querySelectorAll('.client-link').forEach(function(el) {
+    var name = el.getAttribute('data-name') || '';
+    el.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
+}
+</script>
 </body></html>

@@ -47,6 +47,7 @@ def init_db():
         cur.execute("CREATE TABLE IF NOT EXISTS clients (id SERIAL PRIMARY KEY, name TEXT NOT NULL, phone TEXT UNIQUE NOT NULL, birthday TEXT NOT NULL, height REAL NOT NULL DEFAULT 160, gender TEXT DEFAULT 'M', password TEXT NOT NULL, goal_weight REAL DEFAULT 0, goal_date TEXT DEFAULT '', notes TEXT DEFAULT '', is_active INTEGER DEFAULT 1, created_at TEXT DEFAULT CURRENT_TIMESTAMP)")
         cur.execute("CREATE TABLE IF NOT EXISTS sessions (id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id), date TEXT NOT NULL, weight REAL DEFAULT 0, body_fat REAL DEFAULT 0, visceral_fat REAL DEFAULT 0, muscle_mass REAL DEFAULT 0, bmr REAL DEFAULT 0, body_age INTEGER DEFAULT 0, waist REAL DEFAULT 0, abdomen REAL DEFAULT 0, hip REAL DEFAULT 0, thigh REAL DEFAULT 0, notes TEXT DEFAULT '', created_at TEXT DEFAULT CURRENT_TIMESTAMP)")
         cur.execute("CREATE TABLE IF NOT EXISTS photos (id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id), filename TEXT NOT NULL, date TEXT NOT NULL, angle TEXT DEFAULT 'front', created_at TEXT DEFAULT CURRENT_TIMESTAMP)")
+        cur.execute("CREATE TABLE IF NOT EXISTS ai_scans (id SERIAL PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id), date TEXT NOT NULL, overall_score TEXT DEFAULT '', summary TEXT DEFAULT '', moderate_items TEXT DEFAULT '[]', severe_items TEXT DEFAULT '[]', raw_data TEXT DEFAULT '{}', created_at TEXT DEFAULT CURRENT_TIMESTAMP)")
         cur.execute("SELECT id FROM coach WHERE username='bk'")
         if not cur.fetchone():
             cur.execute("INSERT INTO coach (username, password, name) VALUES (%s, %s, %s)", ['bk', 'coach_only', 'BK'])
@@ -97,6 +98,12 @@ def calc_bmi(w, h):
     if not w or not h: return 0
     try: return round(w / ((h/100)**2), 1)
     except: return 0
+
+@app.template_filter('from_json')
+def from_json(s):
+    if not s: return []
+    try: return json.loads(s) if isinstance(s, str) else s
+    except: return []
 
 # ===== HOME =====
 @app.route('/')
@@ -150,7 +157,8 @@ def coach_dash():
         (SELECT date FROM sessions WHERE client_id=c.id ORDER BY date DESC LIMIT 1) as last_date,
         (SELECT weight FROM sessions WHERE client_id=c.id ORDER BY date DESC LIMIT 1) as last_weight,
         (SELECT weight FROM sessions WHERE client_id=c.id ORDER BY date DESC LIMIT 1 OFFSET 1) as prev_weight,
-        (SELECT COUNT(*) FROM sessions WHERE client_id=c.id) as session_count
+        (SELECT COUNT(*) FROM sessions WHERE client_id=c.id) as session_count,
+        (SELECT COUNT(*) FROM ai_scans WHERE client_id=c.id) as scan_count
         FROM clients c WHERE c.is_active=1
         ORDER BY CASE WHEN (SELECT date FROM sessions WHERE client_id=c.id ORDER BY date DESC LIMIT 1) IS NULL THEN 1 ELSE 0 END,
                  (SELECT date FROM sessions WHERE client_id=c.id ORDER BY date DESC LIMIT 1) ASC""").fetchall()
@@ -165,7 +173,8 @@ def coach_dash():
         else: s='overdue'; lbl=f'🔴 {d-14}d overdue'; clr='#ff6b6b'
         cd.append({'id':c['id'],'name':c['name'],'phone':c['phone'],'height':c['height'],'gender':c['gender'],
             'goal_weight':c['goal_weight'],'last_weight':c['last_weight'],'prev_weight':c['prev_weight'],
-            'last_date':c['last_date'],'session_count':c['session_count'],'days':d,'status':s,'label':lbl,'color':clr})
+            'last_date':c['last_date'],'session_count':c['session_count'],'scan_count':c['scan_count'],
+            'days':d,'status':s,'label':lbl,'color':clr})
     return render_template('coach.html',clients=cd,name=session.get('coach_name',''))
 
 # ===== ADD CLIENT =====
@@ -201,8 +210,9 @@ def client_detail(cid):
     if not client: conn.close(); return redirect(url_for('coach_dash'))
     sessions = _exec(conn, "SELECT * FROM sessions WHERE client_id=? ORDER BY date DESC LIMIT 50", [cid]).fetchall()
     photos = _exec(conn, "SELECT * FROM photos WHERE client_id=? ORDER BY date DESC", [cid]).fetchall()
+    scans = _exec(conn, "SELECT * FROM ai_scans WHERE client_id=? ORDER BY date DESC", [cid]).fetchall()
     conn.close()
-    return render_template('client_detail.html',client=client,sessions=sessions,photos=photos)
+    return render_template('client_detail.html',client=client,sessions=sessions,photos=photos,scans=scans)
 
 # ===== ADD SESSION =====
 @app.route('/coach/session/<int:cid>', methods=['POST'])
@@ -289,6 +299,39 @@ def upload_photo(cid):
         conn = get_db()
         _exec(conn, "INSERT INTO photos (client_id,filename,date,angle) VALUES (?,?,?,?)", [cid, fn, sd, request.form.get('angle','front')])
         conn.commit(); conn.close()
+    return redirect(url_for('client_detail',cid=cid))
+
+# ===== AI SCAN =====
+@app.route('/coach/ai-scan/<int:cid>', methods=['POST'])
+def add_ai_scan(cid):
+    if not require_coach(): return redirect(url_for('login'))
+    d = request.form
+    def parse_items(raw):
+        items = []
+        for line in raw.strip().split('\n'):
+            line = line.strip()
+            if not line: continue
+            parts = [p.strip() for p in line.split('|')]
+            item = {'category': parts[0] if len(parts) > 0 else '',
+                    'item': parts[1] if len(parts) > 1 else '',
+                    'value': parts[2] if len(parts) > 2 else '',
+                    'range': parts[3] if len(parts) > 3 else '',
+                    'suggestion': parts[4] if len(parts) > 4 else ''}
+            items.append(item)
+        return json.dumps(items, ensure_ascii=False)
+    conn = get_db()
+    _exec(conn, "INSERT INTO ai_scans (client_id,date,overall_score,summary,moderate_items,severe_items) VALUES (?,?,?,?,?,?)",
+          [cid, d.get('date',date.today().isoformat()), d.get('overall_score',''), d.get('summary',''),
+           parse_items(d.get('moderate_items','')), parse_items(d.get('severe_items',''))])
+    conn.commit(); conn.close()
+    return redirect(url_for('client_detail',cid=cid))
+
+@app.route('/coach/ai-scan-delete/<int:sid>/<int:cid>', methods=['POST'])
+def delete_ai_scan(sid, cid):
+    if not require_coach(): return redirect(url_for('login'))
+    conn = get_db()
+    _exec(conn, "DELETE FROM ai_scans WHERE id=? AND client_id=?", [sid, cid])
+    conn.commit(); conn.close()
     return redirect(url_for('client_detail',cid=cid))
 
 # ===== CLIENT VIEW =====
